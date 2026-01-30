@@ -102,10 +102,13 @@ export const HomeView_Rhodes = ({ onStart, view, quote, onOpenTheme }) => (
                     <span className="text-[8px] font-mono text-primary">READY</span>
                 </div>
 
-                {/* Data Persistence Warning */}
-                <div className="text-center mt-4">
-                    <p className="text-[9px] font-mono text-[var(--color-text-muted)] opacity-60">
-                        ⚠ DATA STORED LOCALLY. DO NOT CLEAR CACHE WITHOUT EXPORT.
+                {/* Data Persistence Warning - High Visibility */}
+                <div className="mt-6 mb-2 mx-4 p-2 border border-amber-500/50 bg-amber-500/10 text-center animate-pulse">
+                    <p className="text-[10px] font-mono text-amber-500 font-bold">
+                        ⚠ DATA LOCAL ONLY
+                    </p>
+                    <p className="text-[9px] font-mono text-amber-500/80 mt-1">
+                        TO BACKUP: GO TO <span className="text-white border-b border-white/20">LOGS</span> &gt; <span className="text-white border-b border-white/20">TOOLS</span>
                     </p>
                 </div>
             </div>

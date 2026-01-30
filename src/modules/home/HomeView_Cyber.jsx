@@ -50,10 +50,15 @@ export const HomeView_Cyber = ({ onStart, view, quote, onOpenTheme }) => (
                 <div className="hero-glow absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-primary/20 blur-[60px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
             </div>
 
-            {/* Data Warning */}
-            <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest mt-8">
-                Data Stored Locally • Don't Clear Cache
-            </p>
+            {/* Data Warning - High Visibility */}
+            <div className="mt-12 text-center text-alert/80 space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#FF453A]">
+                    ⚠ Data Stored on Device
+                </p>
+                <p className="text-[9px] font-mono text-white/50">
+                    Backup via <span className="text-white underline decoration-white/30">LOGS</span> &gt; <span className="text-white underline decoration-white/30">TOOLS</span>
+                </p>
+            </div>
         </div>
     </div>
 );

@@ -67,6 +67,16 @@ const THEME_REGISTRY = {
   ],
   rhodes: [
     {
+      name: 'Clinical (Light)',
+      primary: '#000000',
+      bg: '#F8F9FA',
+      surface: '#E9ECEF',
+      textMain: '#111111',
+      textMuted: '#6c757d',
+      border: '#dee2e6',
+      type: 'light'
+    },
+    {
       name: 'Rhodes OS',
       primary: '#A4C639',
       bg: '#0b0b0d',
@@ -86,22 +96,12 @@ const THEME_REGISTRY = {
       border: '#334155',
       type: 'dark'
     },
-    {
-      name: 'Clinical (Light)',
-      primary: '#000000',
-      bg: '#F8F9FA',
-      surface: '#E9ECEF',
-      textMain: '#111111',
-      textMuted: '#6c757d',
-      border: '#dee2e6',
-      type: 'light'
-    },
   ]
 };
 
 const STYLES = [
+  { id: 'rhodes', name: 'Rhodes Protocol' },
   { id: 'cyber', name: 'Cyber Heavy' },
-  { id: 'rhodes', name: 'Rhodes Protocol' }
 ];
 
 function App() {
