@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { QUOTES } from './data/quotes';
 import { Dumbbell, Calendar, ClipboardList, Trophy, Home, BrainCircuit } from 'lucide-react';
 import './index.css';
 import { PlanManager } from './modules/plans/PlanManager';
@@ -94,14 +95,7 @@ const STYLES = [
   { id: 'cyber', name: 'Cyber Heavy' },
 ];
 
-import { QUOTES } from './data/quotes';
 
-// ... (Theme Registry remains)
-
-const STYLES = [
-  { id: 'rhodes', name: 'Rhodes Protocol' },
-  { id: 'cyber', name: 'Cyber Heavy' },
-];
 
 function App() {
   const [view, setView] = useState('HOME');

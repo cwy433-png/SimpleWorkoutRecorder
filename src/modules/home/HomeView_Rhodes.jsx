@@ -43,7 +43,10 @@ export const HomeView_Rhodes = ({ onStart, view, quote, onOpenTheme }) => (
 
                     <h3 className="text-xs font-mono text-[var(--color-text-muted)] mb-2 tracking-[0.2em] uppercase">Daily Advice</h3>
                     <p className="font-mono text-sm leading-relaxed text-[var(--color-text-main)] max-w-sm">
-                        {quote}
+                        "{quote.text}"
+                    </p>
+                    <p className="font-mono text-xs text-primary mt-2 text-right opacity-80">
+                        — {quote.author}
                     </p>
                 </div>
 

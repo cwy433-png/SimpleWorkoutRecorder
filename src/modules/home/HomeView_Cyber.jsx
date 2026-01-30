@@ -28,7 +28,8 @@ export const HomeView_Cyber = ({ onStart, view, quote, onOpenTheme }) => (
                 <div className="relative inline-block mt-4">
                     <div className="absolute -inset-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent blur-sm"></div>
                     <p className="relative text-[10px] font-mono uppercase tracking-[0.2em] text-primary/80 max-w-[250px] mx-auto leading-relaxed border-t border-b border-primary/20 py-3">
-                        "{quote}"
+                        "{quote.text}"
+                        <span className="block mt-1 text-[8px] opacity-60 normal-case tracking-normal text-white">— {quote.author}</span>
                     </p>
                 </div>
             </div>
