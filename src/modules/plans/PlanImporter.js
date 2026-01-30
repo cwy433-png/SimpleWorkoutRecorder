@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import { createPlan, createDay, createExercise } from './PlanModel';
 
 // Helper to normalize different inputs into our strict Plan Model
-const normalizePlan = (rawData) => {
+export const parseRawData = (rawData) => {
     // Basic validation logic would go here
     // For now, we assume if it's JSON/YAML it largely matches or we map it
     // This is a simplified mapper
@@ -54,7 +54,7 @@ export const parseFile = async (file) => {
                 }
 
                 if (rawData) {
-                    resolve(normalizePlan(rawData));
+                    resolve(parseRawData(rawData));
                 } else {
                     reject(new Error("Unsupported format or empty file"));
                 }

@@ -11,17 +11,7 @@ import { HomeView_Cyber } from './modules/home/HomeView_Cyber';
 import { HomeView_Rhodes } from './modules/home/HomeView_Rhodes';
 
 // Motivational Quotes Database
-const QUOTES = [
-  "Pain is weakness leaving the body.",
-  "Light weight, baby!",
-  "Everybody wants to be a bodybuilder, but nobody wants to lift no heavy-ass weights.",
-  "The only bad workout is the one that didn't happen.",
-  "Suffer now and live the rest of your life as a champion.",
-  "Your body can stand almost anything. It’s your mind that you have to convince.",
-  "Discipline is doing what needs to be done, even if you don't want to do it.",
-  "Train insane or remain the same.",
-  "Excuses don't burn calories."
-];
+// Motivational Quotes moved to src/data/quotes.js
 
 // Theme Registry V2 - Isolated Palettes per Style
 // Each style has its own distinct theme collection
@@ -104,11 +94,42 @@ const STYLES = [
   { id: 'cyber', name: 'Cyber Heavy' },
 ];
 
+import { QUOTES } from './data/quotes';
+
+// ... (Theme Registry remains)
+
+const STYLES = [
+  { id: 'rhodes', name: 'Rhodes Protocol' },
+  { id: 'cyber', name: 'Cyber Heavy' },
+];
+
 function App() {
   const [view, setView] = useState('HOME');
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState(null);
-  const [quote, setQuote] = useState(QUOTES[0]);
+
+  // Random Quote Logic
+  const [quote, setQuote] = useState({ text: "Loading...", author: "System" });
+  useEffect(() => {
+    const randomQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+    setQuote(randomQuote);
+  }, []); // Run once on mount
+
+  // Mobile Keyboard Detection
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const originalHeight = window.innerHeight;
+    const handleResize = () => {
+      // If height shrinks by > 20%, keyboard is likely open
+      if (window.innerHeight < originalHeight * 0.8) {
+        setIsKeyboardOpen(true);
+      } else {
+        setIsKeyboardOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Theme State
   const [showThemeModal, setShowThemeModal] = useState(false);
@@ -289,7 +310,7 @@ function App() {
     }
   };
 
-  const showNav = ['HOME', 'PLANS_LIST', 'HISTORY', 'AI_COACH'].includes(view);
+  const showNav = ['HOME', 'PLANS_LIST', 'HISTORY', 'AI_COACH'].includes(view) && !isKeyboardOpen;
 
   return (
     <div className="flex flex-col min-h-screen text-text-main font-sans selection:bg-primary selection:text-black transition-colors duration-500">
