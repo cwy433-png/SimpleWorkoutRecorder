@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { QUOTES } from './data/quotes';
+import { QUOTES, QUOTE_PACKS, getEnabledQuotes } from './data/quotes';
 import { Dumbbell, Calendar, ClipboardList, Trophy, Home, BrainCircuit } from 'lucide-react';
 import './index.css';
 import { PlanManager } from './modules/plans/PlanManager';
@@ -102,11 +102,21 @@ function App() {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState(null);
 
+  // Quote Packs State
+  const [enabledQuotePacks, setEnabledQuotePacks] = useState(() => {
+    const saved = localStorage.getItem('enabled_quote_packs');
+    if (saved) return JSON.parse(saved);
+    return QUOTE_PACKS.filter(p => p.enabled).map(p => p.id);
+  });
+
   // Random Quote Logic
   const [quote, setQuote] = useState({ text: "Loading...", author: "System" });
   useEffect(() => {
-    const randomQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
-    setQuote(randomQuote);
+    const quotes = getEnabledQuotes(enabledQuotePacks);
+    if (quotes.length > 0) {
+      const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+      setQuote(randomQuote);
+    }
   }, []); // Run once on mount
 
   // Mobile Keyboard Detection
@@ -199,10 +209,24 @@ function App() {
   // Load random quote logic...
   useEffect(() => {
     if (view === 'HOME') {
-      const randomQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
-      setQuote(randomQuote);
+      const quotes = getEnabledQuotes(enabledQuotePacks);
+      if (quotes.length > 0) {
+        const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+        setQuote(randomQuote);
+      }
     }
-  }, [view]);
+  }, [view, enabledQuotePacks]);
+
+  // Quote Pack Toggle
+  const toggleQuotePack = (packId) => {
+    setEnabledQuotePacks(prev => {
+      const updated = prev.includes(packId)
+        ? prev.filter(id => id !== packId)
+        : [...prev, packId];
+      localStorage.setItem('enabled_quote_packs', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   const handleSelectPlan = (plan) => {
     setSelectedPlan(plan);
@@ -280,7 +304,15 @@ function App() {
     switch (view) {
       case 'HOME':
         const HomeView = getHomeComponent();
-        return <HomeView onStart={handleStartSession} setView={setView} quote={quote} onOpenTheme={() => setShowThemeModal(true)} />;
+        return <HomeView
+          onStart={handleStartSession}
+          setView={setView}
+          quote={quote}
+          onOpenTheme={() => setShowThemeModal(true)}
+          quotePacks={QUOTE_PACKS}
+          enabledQuotePacks={enabledQuotePacks}
+          toggleQuotePack={toggleQuotePack}
+        />;
       case 'PLANS_LIST':
         return <PlanManager onSelectPlan={handleSelectPlan} onBack={() => setView('HOME')} />;
       case 'PLAN_DETAIL':

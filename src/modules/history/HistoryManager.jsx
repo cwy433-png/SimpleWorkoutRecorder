@@ -53,23 +53,25 @@ export const HistoryManager = ({ onBack }) => {
     };
 
     return (
-        <div className="flex flex-col h-full animate-in fade-in duration-300 overflow-y-auto pb-safe">
+        <div className="flex flex-col h-full animate-in fade-in duration-300 overflow-y-auto w-full pb-safe">
             <div className="flex items-center gap-2 mb-2 px-2 pt-2">
                 <Button size="sm" variant="ghost" onClick={onBack}>&larr; Home</Button>
-                <h2 className="text-xl font-black italic uppercase tracking-tighter ml-auto">Analytics</h2>
+                <h2 className="text-xl font-black uppercase tracking-tighter ml-auto">Analytics</h2>
             </div>
 
             {/* View Switcher Tabs */}
             <div className="flex gap-2 px-4 mb-6">
                 <button
                     onClick={() => setViewMode('CALENDAR')}
-                    className={`flex-1 py-2 text-xs font-bold uppercase tracking-widest rounded-lg transition-all ${viewMode === 'CALENDAR' ? 'bg-[var(--color-primary)] text-black' : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-primary)]/10'}`}
+                    className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-widest transition-all ${viewMode === 'CALENDAR' ? 'bg-transparent border-2 border-[var(--color-primary)] text-[var(--color-primary)]' : 'bg-transparent border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]'}`}
+                    style={{ clipPath: 'polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px)' }}
                 >
                     History
                 </button>
                 <button
                     onClick={() => setViewMode('TOOLS')}
-                    className={`flex-1 py-2 text-xs font-bold uppercase tracking-widest rounded-lg transition-all ${viewMode === 'TOOLS' ? 'bg-[var(--color-primary)] text-black' : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-primary)]/10'}`}
+                    className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-widest transition-all ${viewMode === 'TOOLS' ? 'bg-transparent border-2 border-[var(--color-primary)] text-[var(--color-primary)]' : 'bg-transparent border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]'}`}
+                    style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%)' }}
                 >
                     Tools (1RM)
                 </button>
@@ -163,7 +165,7 @@ export const HistoryManager = ({ onBack }) => {
                                 <ChevronLeft size={24} />
                             </button>
                             <div className="text-center w-32">
-                                <h3 className="text-xl font-black italic text-[var(--color-text-main)] uppercase leading-none">{monthName}</h3>
+                                <h3 className="text-xl font-black text-[var(--color-text-main)] uppercase leading-none">{['JAN.', 'FEB.', 'MAR.', 'APR.', 'MAY', 'JUN.', 'JUL.', 'AUG.', 'SEP.', 'OCT.', 'NOV.', 'DEC.'][month]}</h3>
                                 <p className="text-[10px] font-bold text-[var(--color-text-muted)] tracking-widest">{year}</p>
                             </div>
                             <button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-[var(--color-surface)] active:scale-95 transition-all text-[var(--color-text-main)]">
@@ -203,15 +205,19 @@ export const HistoryManager = ({ onBack }) => {
                                         key={day}
                                         onClick={() => setSelectedDate(new Date(year, month, day))}
                                         className={`
-                                            relative flex flex-col items-center justify-start pt-1 rounded-lg cursor-pointer transition-all aspect-square border
+                                            relative flex flex-col items-center justify-start pt-1 rounded-none cursor-pointer transition-all aspect-square border-2
                                             ${isSelected
-                                                ? 'bg-[var(--color-primary)] text-black border-[var(--color-primary)] shadow-[0_0_10px_rgba(208,253,62,0.3)] z-10 scale-105'
+                                                ? 'bg-transparent border-[var(--color-primary)] z-10'
                                                 : 'border-transparent hover:bg-[var(--color-surface)]'
                                             }
                                             ${hasWorkout && !isSelected ? 'bg-[var(--color-surface)] border-[var(--color-border)]' : ''}
                                         `}
                                     >
-                                        <span className={`text-xs font-bold leading-none ${isSelected ? 'text-black' : isToday ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]'}`}>
+                                        {/* Corner Triangle for Selected */}
+                                        {isSelected && (
+                                            <div className="absolute top-0 right-0 w-0 h-0 border-t-[10px] border-t-[var(--color-primary)] border-l-[10px] border-l-transparent"></div>
+                                        )}
+                                        <span className={`text-xs font-bold leading-none ${isSelected ? 'text-[var(--color-primary)]' : isToday ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]'}`}>
                                             {day}
                                         </span>
 
@@ -219,7 +225,7 @@ export const HistoryManager = ({ onBack }) => {
                                         <div className="flex-1 flex items-center justify-center w-full">
                                             {hasWorkout ? (
                                                 isSelected ? (
-                                                    <Check size={14} className="text-black stroke-[3]" />
+                                                    <Check size={14} className="text-[var(--color-primary)] stroke-[3]" />
                                                 ) : (
                                                     <div className="h-1.5 w-1.5 rounded-full bg-[var(--color-primary)] shadow-[0_0_4px_var(--color-primary)]"></div>
                                                 )

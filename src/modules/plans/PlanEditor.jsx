@@ -13,6 +13,13 @@ export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
         setPlan({ ...plan, days: [...plan.days, createDay(`Day ${plan.days.length + 1}`)] });
     };
 
+    const addRestDay = () => {
+        const restDay = createDay(`Rest Day`);
+        restDay.isRestDay = true;
+        restDay.exercises = []; // No exercises for rest day
+        setPlan({ ...plan, days: [...plan.days, restDay] });
+    };
+
     const updateDayName = (dayIndex, name) => {
         const newDays = [...plan.days];
         newDays[dayIndex].name = name;
@@ -21,7 +28,7 @@ export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
 
     const addExercise = (dayIndex) => {
         const newDays = [...plan.days];
-        newDays[dayIndex].exercises.push(createExercise("New Exercise"));
+        newDays[dayIndex].exercises.push(createExercise(""));
         setPlan({ ...plan, days: newDays });
     };
 
@@ -113,9 +120,9 @@ export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
     };
 
     return (
-        <div className="flex flex-col gap-6 pb-32 animate-in fade-in duration-300">
+        <div className="flex flex-col gap-6 pb-32 animate-in fade-in duration-300 w-full relative">
             <div className="flex justify-between items-center px-4 pt-4">
-                <h2 className="text-3xl font-black italic text-white uppercase tracking-tighter">
+                <h2 className="text-3xl font-black text-[var(--color-text-main)] uppercase tracking-tighter">
                     Edit <span className="text-[var(--color-primary)]">Plan</span>
                 </h2>
                 {onHome && <Button size="sm" variant="ghost" onClick={onHome}>Home ⌂</Button>}
@@ -124,7 +131,7 @@ export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
             <div className="px-2">
                 <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-2 block">General Info</label>
                 <input
-                    className="w-full bg-[var(--color-surface)] border-2 border-white/5 rounded-2xl p-4 text-xl font-bold text-white focus:border-[var(--color-primary)] focus:outline-none transition-all glass"
+                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-none p-4 text-xl font-bold text-[var(--color-text-main)] focus:border-[var(--color-primary)] focus:outline-none transition-all"
                     value={plan.title}
                     onChange={(e) => updatePlanTitle(e.target.value)}
                     placeholder="Plan Title"
@@ -133,11 +140,11 @@ export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
 
             <div className="flex flex-col gap-6">
                 {plan.days.map((day, dayIndex) => (
-                    <Card key={day.id} className="relative glass border border-white/5 p-4 rounded-3xl overflow-hidden">
+                    <Card key={day.id} className="relative bg-[var(--color-surface)] border border-[var(--color-border)] p-4 rounded-3xl overflow-hidden shadow-sm">
                         <div className="flex justify-between items-center mb-6">
-                            <div className="bg-[var(--color-bg)] px-4 py-2 rounded-xl border border-white/5">
+                            <div className="bg-[var(--color-bg)] px-4 py-2 rounded-xl border border-[var(--color-border)]">
                                 <input
-                                    className="bg-transparent text-lg font-black italic text-white border-none focus:outline-none w-full uppercase"
+                                    className="bg-transparent text-lg font-black italic text-[var(--color-text-main)] border-none focus:outline-none w-full uppercase"
                                     value={day.name}
                                     onChange={(e) => updateDayName(dayIndex, e.target.value)}
                                     placeholder="DAY NAME"
@@ -148,21 +155,23 @@ export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
 
                         <div className="flex flex-col gap-4">
                             {day.exercises.map((ex, exIndex) => (
-                                <div key={ex.id} className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                                    <div className="flex justify-between mb-4">
-                                        <input
-                                            className="bg-transparent font-black italic text-white border-none focus:outline-none flex-1 uppercase tracking-tight text-lg"
-                                            value={ex.name}
-                                            onChange={(e) => updateExercise(dayIndex, exIndex, 'name', e.target.value)}
-                                            placeholder="EXERCISE NAME"
-                                        />
-                                        <button onClick={() => removeExercise(dayIndex, exIndex)} className="text-[var(--color-text-muted)] hover:text-[var(--color-alert)] transition-colors text-xs font-bold uppercase">Remove</button>
+                                <div key={ex.id} className="bg-[var(--color-bg)]/50 p-4 rounded-none border border-[var(--color-border)]">
+                                    <div className="flex justify-between mb-4 items-center">
+                                        <div className="flex-1 border-b-2 border-dashed border-[var(--color-border)] focus-within:border-[var(--color-primary)] transition-colors pb-1">
+                                            <input
+                                                className="bg-transparent font-black text-[var(--color-text-main)] border-none focus:outline-none w-full uppercase tracking-tight text-lg placeholder:text-[var(--color-primary)] placeholder:opacity-70 caret-[var(--color-primary)]"
+                                                value={ex.name}
+                                                onChange={(e) => updateExercise(dayIndex, exIndex, 'name', e.target.value)}
+                                                placeholder="NEW EXERCISE"
+                                            />
+                                        </div>
+                                        <button onClick={() => removeExercise(dayIndex, exIndex)} className="text-[var(--color-text-muted)] hover:text-[var(--color-alert)] transition-colors text-xs font-bold uppercase ml-2 flex-shrink-0">Remove</button>
                                     </div>
                                     <div className="grid grid-cols-4 gap-3">
                                         <div className="flex flex-col gap-1">
                                             <label className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase text-center">Sets</label>
                                             <input
-                                                className="bg-[var(--color-bg)] rounded-xl px-2 py-2 text-sm text-center text-white font-bold border border-white/5 focus:border-[var(--color-primary)] outline-none"
+                                                className="bg-[var(--color-bg)] rounded-none px-2 py-2 text-sm text-center text-[var(--color-text-main)] font-bold border border-[var(--color-border)] focus:border-[var(--color-primary)] outline-none"
                                                 value={ex.sets}
                                                 type="number"
                                                 onChange={(e) => updateExercise(dayIndex, exIndex, 'sets', parseInt(e.target.value))}
@@ -171,7 +180,7 @@ export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
                                         <div className="flex flex-col gap-1">
                                             <label className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase text-center">Reps</label>
                                             <input
-                                                className="bg-[var(--color-bg)] rounded-xl px-2 py-2 text-sm text-center text-white font-bold border border-white/5 focus:border-[var(--color-primary)] outline-none"
+                                                className="bg-[var(--color-bg)] rounded-none px-2 py-2 text-sm text-center text-[var(--color-text-main)] font-bold border border-[var(--color-border)] focus:border-[var(--color-primary)] outline-none"
                                                 value={ex.reps}
                                                 onChange={(e) => updateExercise(dayIndex, exIndex, 'reps', e.target.value)}
                                             />
@@ -179,7 +188,7 @@ export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
                                         <div className="flex flex-col gap-1">
                                             <label className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase text-center">RPE</label>
                                             <input
-                                                className="bg-[var(--color-bg)] rounded-xl px-2 py-2 text-sm text-center text-[var(--color-primary)] font-bold border border-white/5 focus:border-[var(--color-primary)] outline-none"
+                                                className="bg-[var(--color-bg)] rounded-none px-2 py-2 text-sm text-center text-[var(--color-primary)] font-bold border border-[var(--color-border)] focus:border-[var(--color-primary)] outline-none"
                                                 value={ex.rpe}
                                                 type="number"
                                                 onChange={(e) => updateExercise(dayIndex, exIndex, 'rpe', parseInt(e.target.value))}
@@ -188,7 +197,7 @@ export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
                                         <div className="flex flex-col gap-1">
                                             <label className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase text-center">Rest (s)</label>
                                             <input
-                                                className="bg-[var(--color-bg)] rounded-xl px-2 py-2 text-sm text-center text-white font-bold border border-white/5 focus:border-[var(--color-primary)] outline-none"
+                                                className="bg-[var(--color-bg)] rounded-none px-2 py-2 text-sm text-center text-[var(--color-text-main)] font-bold border border-[var(--color-border)] focus:border-[var(--color-primary)] outline-none"
                                                 value={ex.targetRest || 90}
                                                 type="number"
                                                 onChange={(e) => updateExercise(dayIndex, exIndex, 'targetRest', parseInt(e.target.value))}
@@ -197,17 +206,31 @@ export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
                                     </div>
                                 </div>
                             ))}
-                            <Button size="sm" variant="ghost" onClick={() => addExercise(dayIndex)} className="border-dashed border-white/10 py-4">+ ADD EXERCISE</Button>
+                            {!day.isRestDay && (
+                                <Button size="sm" variant="ghost" onClick={() => addExercise(dayIndex)} className="border-dashed border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-primary)] py-4">+ ADD EXERCISE</Button>
+                            )}
+                            {day.isRestDay && (
+                                <div className="text-center py-4 text-[var(--color-text-muted)] text-sm italic opacity-60">Recovery Day - No Exercises</div>
+                            )}
                         </div>
                     </Card>
                 ))}
             </div>
 
-            <Button variant="secondary" onClick={addDay} className="mx-2 py-4 border-2 border-white/5">+ ADD WORKOUT DAY</Button>
+            <div className="flex gap-2 mx-2">
+                <button
+                    onClick={addDay}
+                    className="flex-1 py-4 min-h-[56px] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold uppercase text-sm leading-normal transition-all hover:border-[var(--color-primary)] flex items-center justify-center text-center"
+                >+ Workout Day</button>
+                <button
+                    onClick={addRestDay}
+                    className="py-4 px-4 min-h-[56px] border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] font-bold uppercase text-sm leading-normal transition-all flex items-center justify-center whitespace-nowrap"
+                >+ Rest Day</button>
+            </div>
 
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-[var(--color-surface)] border-t border-white/10 flex gap-4 glass z-20">
-                <Button variant="ghost" className="flex-1 font-bold" onClick={onCancel}>CANCEL</Button>
-                <Button className="flex-1 font-bold shadow-[0_0_20px_rgba(208,253,62,0.3)]" onClick={() => onSave(plan)}>SAVE CHANGES</Button>
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-[var(--color-bg)] border-t border-[var(--color-border)] flex gap-4 z-20">
+                <Button variant="ghost" className="flex-1 font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface)]" onClick={onCancel}>CANCEL</Button>
+                <Button className="flex-1 font-bold bg-[var(--color-primary)] text-black hover:opacity-90 shadow-[0_0_15px_rgba(208,253,62,0.4)]" onClick={() => onSave(plan)}>SAVE CHANGES</Button>
             </div>
         </div>
     );

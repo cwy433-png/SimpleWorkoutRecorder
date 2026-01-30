@@ -167,8 +167,8 @@ body {
   :root[data-style='rhodes'] .card::after {
     content: '';
     position: absolute;
-    bottom: -1px;
-    right: -1px;
+    bottom: 0;
+    right: 0;
     width: 12px;
     height: 12px;
     border-right: 2px solid var(--color-primary);
