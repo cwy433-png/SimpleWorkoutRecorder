@@ -12,12 +12,12 @@ export const HomeView_Rhodes = ({ onStart, view, quote, onOpenTheme }) => (
         {/* Top Status Bar */}
         <div className="flex justify-between items-start p-4 border-b border-[var(--color-border)] relative z-10 bg-[var(--color-bg)]/80 backdrop-blur-sm">
             <div className="flex flex-col">
-                <div className="flex items-center gap-2 text-primary font-mono text-xs tracking-widest opacity-80">
+                <div className="flex items-center gap-2 text-primary font-mono text-xs tracking-widest opacity-80" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>
                     <Terminal size={12} />
                     <span>PRTS::TERMINAL_V3</span>
                 </div>
                 <div className="text-2xl font-black tracking-tighter mt-1 font-mono">
-                    RHODES<span className="text-primary/50">_NET</span>
+                    RHODES<span className="text-primary/50" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.15)' }}>_NET</span>
                 </div>
             </div>
 
@@ -41,11 +41,10 @@ export const HomeView_Rhodes = ({ onStart, view, quote, onOpenTheme }) => (
                     <div className="absolute -left-[5px] -top-[5px] w-2 h-2 border-l border-t border-primary"></div>
                     <div className="absolute -left-[5px] -bottom-[5px] w-2 h-2 border-l border-b border-primary"></div>
 
-                    <h3 className="text-xs font-mono text-[var(--color-text-muted)] mb-2 tracking-[0.2em] uppercase">Daily Advice</h3>
-                    <p className="font-mono text-sm leading-relaxed text-[var(--color-text-main)] max-w-sm">
+                    <p className="font-mono text-sm leading-relaxed text-[var(--color-text-main)] max-w-sm italic">
                         "{quote.text}"
                     </p>
-                    <p className="font-mono text-xs text-primary mt-2 text-right opacity-80">
+                    <p className="font-mono text-xs text-primary mt-2 text-right" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>
                         — {quote.author}
                     </p>
                 </div>
@@ -54,17 +53,17 @@ export const HomeView_Rhodes = ({ onStart, view, quote, onOpenTheme }) => (
                 <div className="grid grid-cols-2 gap-4 mt-8 max-w-xs">
                     <div className="bg-[var(--color-surface)] p-2 border border-[var(--color-border)]">
                         <div className="text-[10px] text-[var(--color-text-muted)] uppercase">Sys Status</div>
-                        <div className="text-primary font-mono">NORMAL</div>
+                        <div className="text-primary font-mono" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>NORMAL</div>
                     </div>
                     <div className="bg-[var(--color-surface)] p-2 border border-[var(--color-border)]">
                         <div className="text-[10px] text-[var(--color-text-muted)] uppercase">Sync</div>
-                        <div className="text-primary font-mono">98.2%</div>
+                        <div className="text-primary font-mono" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>98.2%</div>
                     </div>
                 </div>
             </div>
 
             {/* Bottom Deployment Deck */}
-            <div className="mt-auto p-4 pb-8 bg-gradient-to-t from-black to-transparent">
+            <div className="mt-auto p-4 pb-28 bg-gradient-to-t from-black via-black/40 to-transparent z-10 relative">
                 {/* Deployment Button */}
                 {/* Deployment Button - Wireframe Style */}
                 <button

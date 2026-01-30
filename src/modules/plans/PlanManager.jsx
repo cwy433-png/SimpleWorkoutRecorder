@@ -116,7 +116,7 @@ export const PlanManager = ({ onSelectPlan, onBack }) => {
             </div>
 
             <div className="px-4">
-                <h2 className="text-3xl font-black uppercase tracking-tighter italic">My Plans</h2>
+                <h2 className="text-3xl font-black uppercase tracking-tighter italic text-[var(--color-text-main)]">My Plans</h2>
             </div>
 
             <div className="grid gap-4 pb-28 px-4">
@@ -137,9 +137,27 @@ export const PlanManager = ({ onSelectPlan, onBack }) => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 pl-2 border-l border-[var(--color-border)] z-10">
-                                    <button onClick={(e) => toggleDefaultPlan(e, plan.id)} className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all border ${isDefault ? 'bg-[var(--color-primary)] text-black border-[var(--color-primary)]' : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] border-[var(--color-border)] hover:text-[var(--color-primary)]'}`}>★</button>
-                                    <button onClick={(e) => { e.stopPropagation(); setEditingPlan(plan); }} className="w-10 h-10 flex items-center justify-center rounded-xl bg-[var(--color-bg)] text-[var(--color-text-main)] hover:bg-[var(--color-primary)] hover:text-black transition-all border border-[var(--color-border)]">✎</button>
-                                    <button onClick={(e) => { e.stopPropagation(); deletePlan(plan.id); }} className="w-10 h-10 flex items-center justify-center rounded-xl bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-[var(--color-alert)] hover:text-white transition-all border border-[var(--color-border)]">✕</button>
+                                    <button
+                                        onClick={(e) => toggleDefaultPlan(e, plan.id)}
+                                        className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all border ${isDefault ? 'bg-[var(--color-primary)] text-black border-[var(--color-primary)]' : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] border-[var(--color-border)] hover:text-[var(--color-primary)]'}`}
+                                        title={isDefault ? "Unset Default" : "Set as Default"}
+                                    >
+                                        ★
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setEditingPlan(plan); }}
+                                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-[var(--color-bg)] text-[var(--color-text-main)] hover:bg-[var(--color-primary)] hover:text-black transition-all border border-[var(--color-border)]"
+                                        title="Edit Plan"
+                                    >
+                                        ✎
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); deletePlan(plan.id); }}
+                                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-[var(--color-alert)] hover:text-white transition-all border border-[var(--color-border)]"
+                                        title="Delete Plan"
+                                    >
+                                        ✕
+                                    </button>
                                 </div>
                             </div>
                         </Card>

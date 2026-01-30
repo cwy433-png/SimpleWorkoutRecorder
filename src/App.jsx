@@ -59,12 +59,12 @@ const THEME_REGISTRY = {
   rhodes: [
     {
       name: 'Clinical (Light)',
-      primary: '#000000',
-      bg: '#F8F9FA',
-      surface: '#E9ECEF',
-      textMain: '#111111',
-      textMuted: '#6c757d',
-      border: '#dee2e6',
+      primary: '#84cc16', // Vibrant Lime (Arknights Vibe)
+      bg: '#ffffff',      // Pure White
+      surface: '#f4f4f5', // Zinc-100
+      textMain: '#09090b', // Rich Black (High Contrast)
+      textMuted: '#71717a',
+      border: '#e4e4e7',
       type: 'light'
     },
     {
@@ -309,7 +309,7 @@ function App() {
   return (
     <div className="flex flex-col min-h-screen text-text-main font-sans selection:bg-primary selection:text-black transition-colors duration-500">
       {/* Main Content Area */}
-      <main className={`flex-1 flex flex-col relative w-full max-w-md mx-auto ${showNav ? 'pb-24' : ''}`}>
+      <main className={`flex-1 flex flex-col relative w-full max-w-md mx-auto ${showNav && !(currentStyle.id === 'rhodes' && view === 'HOME') ? 'pb-24' : ''}`}>
         {renderContent()}
       </main>
 
@@ -319,7 +319,9 @@ function App() {
         <div className={`fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none animate-in slide-in-from-bottom-5 duration-500 ${currentStyle.id === 'rhodes' ? 'bottom-0' : 'bottom-6'}`}>
           <nav className={`pointer-events-auto transition-all duration-500 flex items-center 
             ${currentStyle.id === 'rhodes'
-              ? 'w-full justify-between px-8 py-4 border-t border-[var(--color-border)] bg-[var(--color-bg)]/95 backdrop-blur-md rounded-none' // Rhodes: Full-width Dock
+              ? (view === 'HOME'
+                ? 'w-full justify-between px-8 py-4 bg-transparent border-t-0 rounded-none' // Rhodes Home: Transparent for gradient
+                : 'w-full justify-between px-8 py-4 border-t border-[var(--color-border)] bg-[var(--color-bg)]/95 backdrop-blur-md rounded-none') // Rhodes Other: Opaque
               : 'gap-6 glass px-6 py-3 rounded-full shadow-2xl border border-white/10 bg-black/50 backdrop-blur-md max-w-[90vw]' // Cyber: Floating Pill
             }`}
           >

@@ -25,7 +25,7 @@ export const PlanDetail = ({ plan, onBack, onHome, onStartDay }) => {
                     <Card key={day.id || index} className="bg-[var(--color-surface)] border border-[var(--color-border)] overflow-hidden group hover:border-[var(--color-primary)] transition-all">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-2xl font-black italic text-[var(--color-text-main)] group-hover:text-[var(--color-primary)] transition-colors">{day.name}</h3>
-                            <Button size="sm" onClick={() => onStartDay(index, day)} className="shadow-[0_0_15px_rgba(208,253,62,0.2)]">
+                            <Button size="sm" onClick={() => onStartDay(index, day)} className="shadow-[0_0_15px_rgba(208,253,62,0.2)] text-black font-bold">
                                 START &rarr;
                             </Button>
                         </div>
