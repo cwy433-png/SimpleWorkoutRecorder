@@ -281,11 +281,32 @@ export const HistoryManager = ({ onBack }) => {
                                                 const logs = normalizeLogs(workout.logs);
 
                                                 return logs.map((log, idx) => (
-                                                    <div key={log.exerciseId || log.exerciseName || idx} className="flex justify-between text-xs">
-                                                        <span className="text-white/80 font-medium">{log.exerciseName || 'Unknown Exercise'}</span>
-                                                        <span className="text-[var(--color-text-muted)] font-mono">
-                                                            {log.sets?.length || 0} Sets • Max {Math.max(...(log.sets || []).map(s => Number(s.weight || 0)))}kg
-                                                        </span>
+                                                    <div key={log.exerciseId || log.exerciseName || idx} className="flex flex-col gap-1 text-xs mb-2">
+                                                        <div
+                                                            className="flex justify-between items-center cursor-pointer hover:bg-white/5 p-1 rounded transition-colors"
+                                                            onClick={(e) => {
+                                                                const details = e.currentTarget.nextElementSibling;
+                                                                details.classList.toggle('hidden');
+                                                            }}
+                                                        >
+                                                            <span className="text-[var(--color-text-main)]/80 font-medium">{log.exerciseName || 'Unknown Exercise'}</span>
+                                                            <span className="text-[var(--color-text-muted)] font-mono flex items-center gap-1">
+                                                                {log.sets?.length || 0} Sets • Max {Math.max(...(log.sets || []).map(s => Number(s.weight || 0)))}kg
+                                                                <ChevronRight size={12} className="rotate-90 opacity-50" />
+                                                            </span>
+                                                        </div>
+                                                        {/* Hidden Details */}
+                                                        <div className="hidden pl-2 border-l border-[var(--color-border)] ml-1 space-y-1">
+                                                            {(log.sets || []).map((s, sIdx) => (
+                                                                <div key={sIdx} className="flex gap-2 font-mono text-[10px] text-[var(--color-text-muted)]">
+                                                                    <span className="w-4 opacity-50">#{sIdx + 1}</span>
+                                                                    <span className="text-[var(--color-text-main)]">{s.weight}kg</span>
+                                                                    <span>×</span>
+                                                                    <span>{s.reps}</span>
+                                                                    {s.rpe && <span className="text-[var(--color-primary)]">@{s.rpe}</span>}
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 ));
                                             })()}

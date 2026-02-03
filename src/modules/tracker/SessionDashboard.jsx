@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+
 import { ExerciseLogger } from './ExerciseLogger';
+import { RestTimer } from './RestTimer';
 
 export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) => {
     // 1. Safe Data derivation (Hooks must run first)
@@ -150,8 +152,24 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
     const completedCount = completedWrapper.length;
     const progressPercent = Math.round((completedCount / totalExercises) * 100);
 
+    // Rest Timer State (Global)
+    const [restState, setRestState] = useState({ isActive: false, endTime: null, totalDuration: 0, target: 90 });
+
+    const handleStartRest = (targetSeconds = 90) => {
+        setRestState({
+            isActive: true,
+            endTime: Date.now() + targetSeconds * 1000,
+            target: targetSeconds,
+            totalDuration: 0
+        });
+    };
+
+    const handleStopRest = () => {
+        setRestState(prev => ({ ...prev, isActive: false }));
+    };
+
     return (
-        <div className="flex flex-col h-full animate-in fade-in duration-300">
+        <div className="flex flex-col h-full animate-in fade-in duration-300 relative">
             {/* Top Bar (Fixed) */}
             <div className="flex justify-between items-end mb-4 px-2 pt-2">
                 <div>
@@ -160,8 +178,16 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
                         {activeDay.name}
                     </h2>
                 </div>
-                <div className="text-right">
-                    <div className="font-mono text-2xl font-black text-[var(--color-primary)] tracking-tight">{formatTime(duration)}</div>
+                <div className="text-right flex flex-col items-end gap-1">
+                    <div className="font-mono text-xl font-black text-[var(--color-primary)] tracking-tight">{formatTime(duration)}</div>
+                    <Button
+                        onClick={() => setIsAddingExercise(true)}
+                        size="sm"
+                        variant="ghost"
+                        className="text-[10px] font-bold border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black h-7 px-2"
+                    >
+                        + ADD EXERCISE
+                    </Button>
                 </div>
             </div>
 
@@ -263,7 +289,14 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
                                             history={logs}
                                             lastSessionLogs={getLastLog(ex.name)}
                                             onSaveSet={(data) => handleSaveSet(ex.id, data)}
-                                            onNext={() => handleNextExercise(index)}
+                                            onNext={(action) => {
+                                                if (action === 'REST_START') {
+                                                    // Start Rest (Default 90s or exercise specific)
+                                                    handleStartRest(ex.rest || 90);
+                                                } else {
+                                                    handleNextExercise(index);
+                                                }
+                                            }}
                                             isLastExercise={isLast}
                                         />
                                     </div>
@@ -302,11 +335,44 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
                 <Button
                     className="w-full py-4 text-xl font-black italic tracking-tight shadow-xl"
                     variant={completedCount === totalExercises ? 'primary' : 'secondary'}
-                    onClick={() => onFinishWorkout(sessionLogs)}
+                    onClick={() => {
+                        if (completedCount < totalExercises) {
+                            if (window.confirm("You have incomplete exercises. Finish anyway?")) {
+                                onFinishWorkout(sessionLogs);
+                            }
+                        } else {
+                            onFinishWorkout(sessionLogs);
+                        }
+                    }}
                 >
-                    {completedCount === totalExercises ? 'FINISH WORKOUT 🏆' : 'END SESSION'}
+                    {completedCount === totalExercises ? 'FINISH WORKOUT 🏆' : 'FINISH NOW (INCOMPLETE)'}
                 </Button>
             </div>
+            {/* Global Floating Rest Timer */}
+            {restState.isActive && (
+                <div className="fixed bottom-24 right-4 z-50 animate-in slide-in-from-bottom-10 fade-in duration-300">
+                    <div className="bg-black/90 border border-[var(--color-primary)] rounded-full pl-4 pr-1 py-1 flex items-center gap-4 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-black uppercase text-[var(--color-primary)] tracking-widest leading-none">Resting</span>
+                        </div>
+                        <div className="h-10 w-28">
+                            <RestTimer
+                                initialSeconds={restState.target}
+                                onStop={() => {
+                                    // Optional: Log completion?
+                                }}
+                            />
+                        </div>
+                        <Button
+                            size="sm"
+                            onClick={handleStopRest}
+                            className="h-10 w-10 rounded-full bg-[var(--color-primary)] text-black font-black p-0 hover:scale-110 transition-transform"
+                        >
+                            GO
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

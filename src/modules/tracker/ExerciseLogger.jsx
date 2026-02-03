@@ -1,7 +1,6 @@
+
 import React, { useState } from 'react';
 import { Button } from '../../components/ui/Button';
-import { RestTimer } from './RestTimer';
-
 export const ExerciseLogger = ({ exercise, history = [], lastSessionLogs, onSaveSet, onNext, isLastExercise }) => {
     const [unit, setUnit] = useState('KG'); // 'KG' or 'LB'
     const [rpeMode, setRpeMode] = useState('RPE'); // 'RPE' or 'RIR'
@@ -66,47 +65,14 @@ export const ExerciseLogger = ({ exercise, history = [], lastSessionLogs, onSave
 
         onSaveSet({ weight: weightToSave, reps, rpe: finalRpe });
 
-        // START REST
-        setRestStartTime(Date.now());
-        setIsResting(true);
+        // Trigger Rest via parent
+        if (onNext) onNext('REST_START');
 
         setReps('');
         setRpeInput('');
     };
 
-    const handleFinishRest = () => {
-        if (restStartTime) {
-            const actualDuration = Math.round((Date.now() - restStartTime) / 1000);
 
-            // We need to update the LAST log added to inject the rest time.
-            // Since onSaveSet is passed from parent (SessionDashboard), we might need to 
-            // expose a "updateLastSet" method. However, for simplicity/MVP, 
-            // we can assume the parent SessionDashboard 'handleSaveSet' appends to state.
-            // We can hack this by passing a special "update_last_rest" event or 
-            // just ignoring it for the *very* confirmed storage if strictly append-only.
-            // OR: We define a new prop `onUpdateLastSetRest`? 
-            // Better: Just log it to console for now or invoke a generic `onSaveSet({ ...lastLog, rest: actual })` replacement?
-            // Actually, let's try to pass the rest time to the NEXT call? No, that's messy.
-            // Let's pass it to onSaveSet as a distinct update if possible.
-            // Given the limitations of the current props (onSaveSet appends), 
-            // we will add a note: "Rest recorded: " + actualDuration.
-            // Ideal: The USER asked for "In the data structure".
-            // So we really should update the structure.
-            // Let's modify onSaveSet signature to allow updates? 
-            // No, easiest is: SessionDashboard needs to handle 'UPDATE_LAST' action.
-            // For now, let's just create a new 'onRecordRest' prop if possible, or 
-            // rely on the user seeing it in the next session? 
-            // Actually, let's just update `onSaveSet` in SessionDashboard to handle an update.
-            // But I cannot see SessionDashboard right now.
-            // Let's just track it locally or assume onSaveSet handles an object with `isUpdate: true`?
-            // Let's try: onSaveSet({ restTime: actualDuration, isRestUpdate: true });
-
-            // NOTE: I will implement the UI logic first.
-            if (onSaveSet) onSaveSet({ restTime: actualDuration, isRestUpdate: true });
-        }
-        setIsResting(false);
-        setRestStartTime(null);
-    };
 
     // Input Validation & Max Length Font Sizing
     const getFontSize = (val) => {
@@ -146,7 +112,7 @@ export const ExerciseLogger = ({ exercise, history = [], lastSessionLogs, onSave
                             if (!log) return <span className="opacity-10 font-bold">-</span>;
                             const displayW = toDisplay(log.weight);
                             return (
-                                <div className={`grid grid-cols-[1.2fr_15px_0.8fr_15px_0.8fr] gap-0.5 items-center font-black tracking-tighter ${colorClass}`}>
+                                <div className={`grid grid - cols - [1.2fr_15px_0.8fr_15px_0.8fr] gap - 0.5 items - center font - black tracking - tighter ${colorClass} `}>
                                     <span className="text-right">{displayW}</span>
                                     <span className="text-[10px] opacity-40 text-center">×</span>
                                     <span className="text-center">{log.reps}</span>
@@ -181,7 +147,7 @@ export const ExerciseLogger = ({ exercise, history = [], lastSessionLogs, onSave
                     <input
                         type="number" inputMode="decimal"
                         value={weight} onChange={e => setWeight(e.target.value)}
-                        className={`w-full min-w-[80px] p-3 text-center bg-zinc-900 rounded-lg text-white font-black border-2 border-white/20 focus:border-[var(--color-primary)] focus:outline-none transition-all ${getFontSize(weight)}`}
+                        className={`w - full min - w - [80px] p - 3 text - center bg - zinc - 900 rounded - lg text - white font - black border - 2 border - white / 20 focus: border - [var(--color - primary)]focus: outline - none transition - all ${getFontSize(weight)} `}
                         placeholder="-"
                     />
                 </div>
@@ -192,7 +158,7 @@ export const ExerciseLogger = ({ exercise, history = [], lastSessionLogs, onSave
                     <input
                         type="number" inputMode="numeric"
                         value={reps} onChange={e => setReps(e.target.value)}
-                        className={`w-full min-w-[60px] p-3 text-center bg-zinc-900 rounded-lg text-white font-black border-2 border-white/20 focus:border-[var(--color-primary)] focus:outline-none transition-all ${getFontSize(reps)}`}
+                        className={`w - full min - w - [60px] p - 3 text - center bg - zinc - 900 rounded - lg text - white font - black border - 2 border - white / 20 focus: border - [var(--color - primary)]focus: outline - none transition - all ${getFontSize(reps)} `}
                         placeholder="-"
                     />
                 </div>
@@ -205,7 +171,7 @@ export const ExerciseLogger = ({ exercise, history = [], lastSessionLogs, onSave
                     <input
                         type="number" inputMode="decimal"
                         value={rpeInput} onChange={e => handleRpeChange(e.target.value)}
-                        className={`w-full min-w-[60px] p-3 text-center bg-zinc-900 rounded-lg text-[var(--color-primary)] font-black border-2 border-white/20 focus:border-[var(--color-primary)] focus:outline-none transition-all ${getFontSize(rpeInput)}`}
+                        className={`w - full min - w - [60px] p - 3 text - center bg - zinc - 900 rounded - lg text - [var(--color - primary)]font - black border - 2 border - white / 20 focus: border - [var(--color - primary)]focus: outline - none transition - all ${getFontSize(rpeInput)} `}
                         placeholder="-"
                     />
                 </div>
@@ -215,55 +181,14 @@ export const ExerciseLogger = ({ exercise, history = [], lastSessionLogs, onSave
             <Button
                 size="lg"
                 onClick={handleLog}
-                className={`w-full py-4 text-lg font-black italic shadow-lg transition-all active:scale-[0.98] ${isTargetMet ? 'bg-white text-black hover:bg-white/90' : ''}`}
+                className={`w - full py - 4 text - lg font - black italic shadow - lg transition - all active: scale - [0.98] ${isTargetMet ? 'bg-white text-black hover:bg-white/90' : ''} `}
             >
                 {isTargetMet ? '+ BONUS SET' : 'LOG SET'}
             </Button>
 
-            {/* TARGET MET MESSAGE */}
-            {isTargetMet && !isResting && (
+            {isTargetMet && !isLastExercise && (
                 <div className="mt-2 text-center">
-                    {!isLastExercise && <div className="text-xs text-[var(--color-primary)] font-bold uppercase animate-pulse mb-2">Target Complete • Move On</div>}
-                    {!isLastExercise && (
-                        <Button onClick={onNext} className="w-full py-4 text-lg font-black italic border border-[var(--color-primary)]/50 bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
-                            NEXT EXERCISE &darr;
-                        </Button>
-                    )}
-                </div>
-            )}
-
-            {/* REST TIMER SHEET */}
-            {isResting && (
-                <div className="fixed bottom-0 left-0 right-0 z-[100] bg-[#09090b] border-t border-[var(--color-primary)] pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom duration-300">
-                    <div className="p-6 max-w-md mx-auto">
-                        <div className="flex items-stretch justify-between gap-4 h-[160px]">
-                            {/* LEFT: Header (Top) & Button (Bottom) */}
-                            <div className="flex flex-col h-full gap-2 flex-1 min-w-0">
-                                <div className="shrink-0">
-                                    <h3 className="text-xl font-black italic text-white tracking-tighter mb-1 leading-none">RESTING</h3>
-                                    {!isLastExercise && isTargetMet && (
-                                        <div className="text-xs font-bold text-[var(--color-primary)] uppercase animate-pulse truncate leading-none">
-                                            UP NEXT: NEXT EXERCISE
-                                        </div>
-                                    )}
-                                </div>
-
-                                <Button
-                                    onClick={handleFinishRest}
-                                    className="flex-1 w-full bg-[var(--color-primary)] text-black shadow-[0px_4px_0px_rgba(255,255,255,0.3)] rounded-[var(--radius-lg)] active:translate-y-[4px] active:shadow-none transition-all border-2 border-transparent hover:border-black/10 flex items-center justify-center overflow-hidden p-0"
-                                >
-                                    <span className="text-2xl sm:text-3xl font-black italic tracking-widest leading-none scale-x-110 transform origin-center" style={{ fontStyle: 'var(--font-slant)' }}>SET {setsDone + 1}</span>
-                                </Button>
-                            </div>
-
-                            {/* RIGHT: Timer Controls */}
-                            <div className="w-[140px] shrink-0 h-full">
-                                <RestTimer
-                                    initialSeconds={exercise.targetRest || 90}
-                                />
-                            </div>
-                        </div>
-                    </div>
+                    <div className="text-xs text-[var(--color-primary)] font-bold uppercase animate-pulse mb-2">Target Complete</div>
                 </div>
             )}
         </div>
