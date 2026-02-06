@@ -112,11 +112,11 @@ export const ExerciseLogger = ({ exercise, history = [], lastSessionLogs, onSave
                             if (!log) return <span className="opacity-10 font-bold">-</span>;
                             const displayW = toDisplay(log.weight);
                             return (
-                                <div className={`grid grid - cols - [1.2fr_15px_0.8fr_15px_0.8fr] gap - 0.5 items - center font - black tracking - tighter ${colorClass} `}>
+                                <div className={`grid grid-cols-[1.2fr_15px_0.8fr_15px_0.8fr] gap-0.5 items-center font-bold tracking-tighter text-[10px] ${colorClass}`}>
                                     <span className="text-right">{displayW}</span>
-                                    <span className="text-[10px] opacity-40 text-center">×</span>
+                                    <span className="text-[9px] opacity-40 text-center">×</span>
                                     <span className="text-center">{log.reps}</span>
-                                    <span className="text-[10px] opacity-40 text-center">@</span>
+                                    <span className="text-[9px] opacity-40 text-center">@</span>
                                     <span className="text-left">{log.rpe || '-'}</span>
                                 </div>
                             );
@@ -125,14 +125,14 @@ export const ExerciseLogger = ({ exercise, history = [], lastSessionLogs, onSave
                         return (
                             <div key={i} style={{ display: 'grid', gridTemplateColumns: '30px 1fr 1fr', gap: '12px' }} className="items-center py-1">
                                 <div className="text-[var(--color-text-muted)] font-bold text-xs">{i + 1}</div>
-                                <div className="flex justify-end">{formatLog(lastLog, 'text-[var(--color-primary)]')}</div>
-                                <div className="flex justify-end text-white">{formatLog(currentLog, 'text-white')}</div>
+                                <div className="flex justify-end">{formatLog(lastLog, 'text-black font-medium')}</div>
+                                <div className="flex justify-end">{formatLog(currentLog, 'text-black font-medium')}</div>
                             </div>
                         );
                     })}
                 </div>
 
-                <div className="mt-3 pt-2 border-t border-white/5 text-[9px] font-mono text-[var(--color-text-muted)] text-center opacity-60">
+                <div className="mt-3 pt-2 border-t border-black/5 text-[9px] font-mono text-[var(--color-text-muted)] text-center opacity-60">
                     {unit} × REPS @ RPE
                 </div>
             </div>
@@ -147,7 +147,7 @@ export const ExerciseLogger = ({ exercise, history = [], lastSessionLogs, onSave
                     <input
                         type="number" inputMode="decimal"
                         value={weight} onChange={e => setWeight(e.target.value)}
-                        className={`w - full min - w - [80px] p - 3 text - center bg - zinc - 900 rounded - lg text - white font - black border - 2 border - white / 20 focus: border - [var(--color - primary)]focus: outline - none transition - all ${getFontSize(weight)} `}
+                        className={`w-full min-w-[80px] p-3 text-center bg-white rounded-lg text-black font-black border-2 border-white/20 focus:border-[var(--color-primary)] focus:outline-none transition-all ${getFontSize(weight)}`}
                         placeholder="-"
                     />
                 </div>
@@ -158,7 +158,7 @@ export const ExerciseLogger = ({ exercise, history = [], lastSessionLogs, onSave
                     <input
                         type="number" inputMode="numeric"
                         value={reps} onChange={e => setReps(e.target.value)}
-                        className={`w - full min - w - [60px] p - 3 text - center bg - zinc - 900 rounded - lg text - white font - black border - 2 border - white / 20 focus: border - [var(--color - primary)]focus: outline - none transition - all ${getFontSize(reps)} `}
+                        className={`w-full min-w-[60px] p-3 text-center bg-white rounded-lg text-black font-black border-2 border-white/20 focus:border-[var(--color-primary)] focus:outline-none transition-all ${getFontSize(reps)}`}
                         placeholder="-"
                     />
                 </div>
@@ -171,7 +171,7 @@ export const ExerciseLogger = ({ exercise, history = [], lastSessionLogs, onSave
                     <input
                         type="number" inputMode="decimal"
                         value={rpeInput} onChange={e => handleRpeChange(e.target.value)}
-                        className={`w - full min - w - [60px] p - 3 text - center bg - zinc - 900 rounded - lg text - [var(--color - primary)]font - black border - 2 border - white / 20 focus: border - [var(--color - primary)]focus: outline - none transition - all ${getFontSize(rpeInput)} `}
+                        className={`w-full min-w-[60px] p-3 text-center bg-white rounded-lg text-black font-black border-2 border-white/20 focus:border-[var(--color-primary)] focus:outline-none transition-all ${getFontSize(rpeInput)}`}
                         placeholder="-"
                     />
                 </div>
@@ -181,7 +181,7 @@ export const ExerciseLogger = ({ exercise, history = [], lastSessionLogs, onSave
             <Button
                 size="lg"
                 onClick={handleLog}
-                className={`w - full py - 4 text - lg font - black italic shadow - lg transition - all active: scale - [0.98] ${isTargetMet ? 'bg-white text-black hover:bg-white/90' : ''} `}
+                className={`w-full py-4 text-lg font-black italic shadow-lg transition-all active:scale-[0.98] ${isTargetMet ? 'bg-white text-black hover:bg-white/90' : ''}`}
             >
                 {isTargetMet ? '+ BONUS SET' : 'LOG SET'}
             </Button>
