@@ -108,11 +108,24 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
     const getLastLog = (exerciseName) => {
         if (!historyData || !Array.isArray(historyData)) return null;
 
-        // Find the most recent workout that has this exercise
-        const log = historyData.find(record => record && record.logs && record.logs[exerciseName]);
-        if (log && log.logs[exerciseName]) {
-            // Return the sets from that session
-            return log.logs[exerciseName];
+        // Iterate through history (Newest -> Oldest)
+        for (const record of historyData) {
+            if (!record || !record.logs) continue;
+
+            // V2 Format: Array of logs
+            if (Array.isArray(record.logs)) {
+                // Try to find by name (robustness)
+                const logEntry = record.logs.find(l => l.exerciseName === exerciseName);
+                if (logEntry && logEntry.sets) {
+                    return logEntry.sets;
+                }
+            }
+            // V1 Format: Object keyed by name
+            else if (typeof record.logs === 'object') {
+                if (record.logs[exerciseName]) {
+                    return record.logs[exerciseName];
+                }
+            }
         }
         return null;
     };
