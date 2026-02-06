@@ -180,14 +180,6 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
                 </div>
                 <div className="text-right flex flex-col items-end gap-1">
                     <div className="font-mono text-xl font-black text-[var(--color-primary)] tracking-tight">{formatTime(duration)}</div>
-                    <Button
-                        onClick={() => setIsAddingExercise(true)}
-                        size="sm"
-                        variant="ghost"
-                        className="text-[10px] font-bold border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black h-7 px-2"
-                    >
-                        + ADD EXERCISE
-                    </Button>
                 </div>
             </div>
 
@@ -217,14 +209,19 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
                     const isTargetMet = setsDone >= (ex.sets || 3);
                     const isExpanded = expandedExerciseId === ex.id;
                     const isLast = index === sessionExercises.length - 1;
+                    const isSuperset = ex.supersetWithPrevious;
 
                     return (
-                        <div key={ex.id} ref={el => scrollRefs.current[ex.id] = el}>
+                        <div key={ex.id} ref={el => scrollRefs.current[ex.id] = el} className={`${isSuperset ? '-mt-4 relative z-10' : ''}`}>
+                            {isSuperset && (
+                                <div className="ml-4 w-0.5 h-4 bg-[var(--color-primary)]/50 mx-auto"></div>
+                            )}
                             <Card
                                 className={`
                                     transition-all duration-300 overflow-hidden
+                                    ${isSuperset ? 'rounded-t-none border-t-0' : ''}
                                     ${isExpanded
-                                        ? 'border-[var(--color-primary)] glow-border bg-[var(--color-surface)] ring-1 ring-[var(--color-primary)]/50'
+                                        ? 'border-2 border-[var(--color-primary)] glow-border bg-[var(--color-surface)] shadow-[0_0_20px_rgba(208,253,62,0.1)]'
                                         : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/30'
                                     }
                                     ${isTargetMet && !isExpanded ? 'opacity-60 grayscale-[0.5]' : ''}
@@ -333,7 +330,7 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
             {/* Footer Action */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-[var(--color-bg)] border-t border-[var(--color-border)] z-20">
                 <Button
-                    className="w-full py-4 text-xl font-black italic tracking-tight shadow-xl"
+                    className={`w-full py-4 text-xl font-black italic tracking-tight shadow-xl ${completedCount === totalExercises ? '' : 'text-[var(--color-text-muted)] opacity-80'}`}
                     variant={completedCount === totalExercises ? 'primary' : 'secondary'}
                     onClick={() => {
                         if (completedCount < totalExercises) {
@@ -349,24 +346,21 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
                 </Button>
             </div>
             {/* Global Floating Rest Timer */}
+            {/* Global Floating Rest Timer */}
             {restState.isActive && (
-                <div className="fixed bottom-24 right-4 z-50 animate-in slide-in-from-bottom-10 fade-in duration-300">
-                    <div className="bg-black/90 border border-[var(--color-primary)] rounded-full pl-4 pr-1 py-1 flex items-center gap-4 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-                        <div className="flex flex-col">
-                            <span className="text-[9px] font-black uppercase text-[var(--color-primary)] tracking-widest leading-none">Resting</span>
-                        </div>
-                        <div className="h-10 w-28">
+                <div className="fixed top-24 left-0 right-0 z-50 animate-in slide-in-from-top-4 fade-in duration-300 pointer-events-none flex justify-center">
+                    <div className="pointer-events-auto bg-black border border-[var(--color-primary)]/30 rounded-full px-4 py-1.5 flex items-center gap-3 shadow-[0_8px_30px_rgba(0,0,0,0.8)] scale-90 backdrop-blur-md">
+                        <span className="text-[9px] font-black uppercase text-[var(--color-primary)] tracking-widest whitespace-nowrap">Rest</span>
+                        <div className="min-w-[50px] flex justify-center">
                             <RestTimer
                                 initialSeconds={restState.target}
-                                onStop={() => {
-                                    // Optional: Log completion?
-                                }}
+                                onStop={() => { }}
                             />
                         </div>
                         <Button
                             size="sm"
                             onClick={handleStopRest}
-                            className="h-10 w-10 rounded-full bg-[var(--color-primary)] text-black font-black p-0 hover:scale-110 transition-transform"
+                            className="h-6 w-10 rounded-full bg-[var(--color-primary)] text-black font-black text-[10px] hover:scale-105 transition-transform p-0"
                         >
                             GO
                         </Button>

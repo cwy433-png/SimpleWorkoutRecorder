@@ -11,6 +11,10 @@ export const HistoryManager = ({ onBack }) => {
 
     const [selectedDate, setSelectedDate] = useState(new Date());
 
+    // EDITING STATE
+    const [editingWorkout, setEditingWorkout] = useState(null); // The full workout object being edited
+
+    // Load history from localStorage
     useEffect(() => {
         const saved = localStorage.getItem('workout_history');
         if (saved) {
@@ -26,16 +30,8 @@ export const HistoryManager = ({ onBack }) => {
     const month = currentDate.getMonth();
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
-    const monthName = currentDate.toLocaleString('default', { month: 'long' });
 
-    const getWorkoutsForDay = (day) => {
-        return history.filter(h => {
-            const d = new Date(h.date);
-            return d.getDate() === day && d.getMonth() === month && d.getFullYear() === year;
-        });
-    };
-
-    // Get workouts for the currently selected date (full date object comparison)
+    // Get workouts for the currently selected date
     const selectedDayWorkouts = history.filter(h => {
         const d = new Date(h.date);
         return d.getDate() === selectedDate.getDate() &&
@@ -50,6 +46,33 @@ export const HistoryManager = ({ onBack }) => {
     const isFuture = (day) => {
         const d = new Date(year, month, day);
         return d > new Date();
+    };
+
+    const handleSaveEdit = () => {
+        if (!editingWorkout) return;
+
+        const newHistory = history.map(h => h.id === editingWorkout.id ? editingWorkout : h);
+        setHistory(newHistory);
+        localStorage.setItem('workout_history', JSON.stringify(newHistory));
+        setEditingWorkout(null);
+    };
+
+    const startEditing = (workout) => {
+        // Normalize logs to Array format for consistent editing (V2 Migration)
+        let logs = workout.logs;
+        if (!Array.isArray(logs)) {
+            // Convert Legacy Object to Array structure
+            if (typeof logs === 'object' && logs !== null) {
+                logs = Object.entries(logs).map(([name, sets]) => ({
+                    exerciseName: name,
+                    sets: sets
+                }));
+            } else {
+                logs = [];
+            }
+        }
+        // Deep copy to avoid mutating state directly during edit
+        setEditingWorkout({ ...workout, logs: JSON.parse(JSON.stringify(logs)) });
     };
 
     return (
@@ -80,7 +103,7 @@ export const HistoryManager = ({ onBack }) => {
             {viewMode === 'TOOLS' ? (
                 <div className="px-4">
                     <OneRepMax />
-
+                    {/* ... (Keep existing Tools UI) ... */}
                     <div className="mt-8">
                         <h4 className="text-xs font-bold uppercase text-[var(--color-text-muted)] mb-4 border-b border-[var(--color-border)] pb-2">Data Management</h4>
 
@@ -256,20 +279,35 @@ export const HistoryManager = ({ onBack }) => {
                                                 <h3 className="font-black italic text-lg text-[var(--color-text-main)]">{workout.planTitle}</h3>
                                                 <p className="text-sm text-[var(--color-primary)] font-bold">{workout.dayName}</p>
                                             </div>
-                                            <span className="text-xs font-mono text-[var(--color-text-muted)]">
-                                                {new Date(workout.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
+
+                                            <div className="flex gap-2 items-center">
+                                                {!editingWorkout && (
+                                                    <span className="text-xs font-mono text-[var(--color-text-muted)] mr-2">
+                                                        {new Date(workout.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                )}
+
+                                                {editingWorkout?.id === workout.id ? (
+                                                    <div className="flex gap-2">
+                                                        <Button size="sm" variant="ghost" onClick={() => setEditingWorkout(null)} className="text-xs text-[var(--color-alert)] border border-[var(--color-alert)] h-6 px-2">Cancel</Button>
+                                                        <Button size="sm" onClick={handleSaveEdit} className="text-xs bg-[var(--color-primary)] text-black h-6 px-2 font-bold">Save</Button>
+                                                    </div>
+                                                ) : (
+                                                    <Button size="sm" variant="ghost" onClick={() => startEditing(workout)} className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] border border-[var(--color-border)] h-6 px-2 hover:bg-[var(--color-surface)]">
+                                                        Edit
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
 
                                         <div className="space-y-2 mt-3 pt-3 border-t border-[var(--color-border)]">
                                             {(() => {
-                                                // Resilient Parsing: Handle V1 (Object) and V2 (Array)
+                                                const isEditing = editingWorkout?.id === workout.id;
+                                                const activeLogs = isEditing ? editingWorkout.logs : workout.logs;
+
                                                 const normalizeLogs = (rawLogs) => {
-                                                    if (Array.isArray(rawLogs)) {
-                                                        return rawLogs; // V2: Already robust array
-                                                    }
+                                                    if (Array.isArray(rawLogs)) return rawLogs;
                                                     if (typeof rawLogs === 'object' && rawLogs !== null) {
-                                                        // V1: Legacy Object -> Convert to Array
                                                         return Object.entries(rawLogs).map(([name, sets]) => ({
                                                             exerciseName: name,
                                                             sets: sets
@@ -278,35 +316,95 @@ export const HistoryManager = ({ onBack }) => {
                                                     return [];
                                                 };
 
-                                                const logs = normalizeLogs(workout.logs);
+                                                const logs = normalizeLogs(activeLogs);
 
-                                                return logs.map((log, idx) => (
-                                                    <div key={log.exerciseId || log.exerciseName || idx} className="flex flex-col gap-1 text-xs mb-2">
-                                                        <div
-                                                            className="flex justify-between items-center cursor-pointer hover:bg-white/5 p-1 rounded transition-colors"
-                                                            onClick={(e) => {
-                                                                const details = e.currentTarget.nextElementSibling;
-                                                                details.classList.toggle('hidden');
-                                                            }}
-                                                        >
-                                                            <span className="text-[var(--color-text-main)]/80 font-medium">{log.exerciseName || 'Unknown Exercise'}</span>
-                                                            <span className="text-[var(--color-text-muted)] font-mono flex items-center gap-1">
-                                                                {log.sets?.length || 0} Sets • Max {Math.max(...(log.sets || []).map(s => Number(s.weight || 0)))}kg
-                                                                <ChevronRight size={12} className="rotate-90 opacity-50" />
-                                                            </span>
+                                                return logs.map((log, exIdx) => (
+                                                    <div key={exIdx} className="flex flex-col gap-1 text-xs mb-2">
+                                                        <div className="flex justify-between items-center bg-white/5 p-1 rounded">
+                                                            <span className="text-[var(--color-text-main)]/80 font-medium">{log.exerciseName || 'Unknown'}</span>
+                                                            {!isEditing && (
+                                                                <span className="text-[var(--color-text-muted)] font-mono flex items-center gap-1">
+                                                                    {log.sets?.length || 0} Sets
+                                                                </span>
+                                                            )}
                                                         </div>
-                                                        {/* Hidden Details */}
-                                                        <div className="hidden pl-2 border-l border-[var(--color-border)] ml-1 space-y-1">
-                                                            {(log.sets || []).map((s, sIdx) => (
-                                                                <div key={sIdx} className="flex gap-2 font-mono text-[10px] text-[var(--color-text-muted)]">
-                                                                    <span className="w-4 opacity-50">#{sIdx + 1}</span>
-                                                                    <span className="text-[var(--color-text-main)]">{s.weight}kg</span>
-                                                                    <span>×</span>
-                                                                    <span>{s.reps}</span>
-                                                                    {s.rpe && <span className="text-[var(--color-primary)]">@{s.rpe}</span>}
-                                                                </div>
-                                                            ))}
-                                                        </div>
+
+                                                        {isEditing ? (
+                                                            <div className="pl-2 border-l border-[var(--color-border)] ml-1 space-y-2 py-2">
+                                                                {(log.sets || []).map((s, sIdx) => (
+                                                                    <div key={sIdx} className="flex gap-1 items-center font-mono text-[10px]">
+                                                                        <span className="w-4 text-[var(--color-text-muted)] opacity-50">#{sIdx + 1}</span>
+                                                                        <input
+                                                                            type="number"
+                                                                            className="w-10 bg-[var(--color-bg)] border border-[var(--color-border)] rounded text-center text-[var(--color-text-main)] p-1"
+                                                                            value={s.weight}
+                                                                            onChange={(e) => {
+                                                                                const newLogs = [...editingWorkout.logs];
+                                                                                newLogs[exIdx].sets[sIdx].weight = e.target.value;
+                                                                                setEditingWorkout({ ...editingWorkout, logs: newLogs });
+                                                                            }}
+                                                                        />
+                                                                        <span className="text-[var(--color-text-muted)]">kg ×</span>
+                                                                        <input
+                                                                            type="number"
+                                                                            className="w-8 bg-[var(--color-bg)] border border-[var(--color-border)] rounded text-center text-[var(--color-text-main)] p-1"
+                                                                            value={s.reps}
+                                                                            onChange={(e) => {
+                                                                                const newLogs = [...editingWorkout.logs];
+                                                                                newLogs[exIdx].sets[sIdx].reps = e.target.value;
+                                                                                setEditingWorkout({ ...editingWorkout, logs: newLogs });
+                                                                            }}
+                                                                        />
+                                                                        <span className="text-[var(--color-text-muted)]">@</span>
+                                                                        <input
+                                                                            type="number"
+                                                                            className="w-8 bg-[var(--color-bg)] border border-[var(--color-border)] rounded text-center text-[var(--color-primary)] p-1"
+                                                                            value={s.rpe || ''}
+                                                                            placeholder="RPE"
+                                                                            onChange={(e) => {
+                                                                                const newLogs = [...editingWorkout.logs];
+                                                                                newLogs[exIdx].sets[sIdx].rpe = e.target.value;
+                                                                                setEditingWorkout({ ...editingWorkout, logs: newLogs });
+                                                                            }}
+                                                                        />
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                const newLogs = [...editingWorkout.logs];
+                                                                                newLogs[exIdx].sets.splice(sIdx, 1);
+                                                                                setEditingWorkout({ ...editingWorkout, logs: newLogs });
+                                                                            }}
+                                                                            className="ml-auto text-[var(--color-alert)] p-1 hover:bg-white/10 rounded"
+                                                                        >✕</button>
+                                                                    </div>
+                                                                ))}
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() => {
+                                                                        const newLogs = [...editingWorkout.logs];
+                                                                        // Add a copy of the last set or a default set
+                                                                        const lastSet = newLogs[exIdx].sets[newLogs[exIdx].sets.length - 1] || { weight: 0, reps: 0, rpe: 8 };
+                                                                        newLogs[exIdx].sets.push({ ...lastSet });
+                                                                        setEditingWorkout({ ...editingWorkout, logs: newLogs });
+                                                                    }}
+                                                                    className="w-full text-[10px] border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)] mt-2"
+                                                                >
+                                                                    + Add Set
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="hidden pl-2 border-l border-[var(--color-border)] ml-1 space-y-1">
+                                                                {(log.sets || []).map((s, sIdx) => (
+                                                                    <div key={sIdx} className="flex gap-2 font-mono text-[10px] text-[var(--color-text-muted)]">
+                                                                        <span className="w-4 opacity-50">#{sIdx + 1}</span>
+                                                                        <span className="text-[var(--color-text-main)]">{s.weight}kg</span>
+                                                                        <span>×</span>
+                                                                        <span>{s.reps}</span>
+                                                                        {s.rpe && <span className="text-[var(--color-primary)]">@{s.rpe}</span>}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ));
                                             })()}

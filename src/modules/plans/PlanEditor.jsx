@@ -157,7 +157,7 @@ export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
                             {day.exercises.map((ex, exIndex) => (
                                 <div key={ex.id} className="bg-[var(--color-bg)]/50 p-4 rounded-none border border-[var(--color-border)]">
                                     <div className="flex justify-between mb-4 items-center">
-                                        <div className="flex-1 border-b-2 border-dashed border-[var(--color-border)] focus-within:border-[var(--color-primary)] transition-colors pb-1">
+                                        <div className="flex-1 border-b-2 border-dashed border-[var(--color-border)] focus-within:border-[var(--color-primary)] transition-colors pb-1 mr-2">
                                             <input
                                                 className="bg-transparent font-black text-[var(--color-text-main)] border-none focus:outline-none w-full uppercase tracking-tight text-lg placeholder:text-[var(--color-primary)] placeholder:opacity-70 caret-[var(--color-primary)]"
                                                 value={ex.name}
@@ -165,7 +165,19 @@ export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
                                                 placeholder="NEW EXERCISE"
                                             />
                                         </div>
-                                        <button onClick={() => removeExercise(dayIndex, exIndex)} className="text-[var(--color-text-muted)] hover:text-[var(--color-alert)] transition-colors text-xs font-bold uppercase ml-2 flex-shrink-0">Remove</button>
+                                        <div className="flex items-center gap-1">
+                                            {/* Superset Toggle */}
+                                            {exIndex > 0 && (
+                                                <button
+                                                    onClick={() => updateExercise(dayIndex, exIndex, 'supersetWithPrevious', !ex.supersetWithPrevious)}
+                                                    className={`p-1 rounded transition-all ${ex.supersetWithPrevious ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/10' : 'text-[var(--color-text-muted)] opacity-30 hover:opacity-100'}`}
+                                                    title="Superset with previous"
+                                                >
+                                                    <span className="text-xs font-bold transform rotate-90 inline-block">🔗</span>
+                                                </button>
+                                            )}
+                                            <button onClick={() => removeExercise(dayIndex, exIndex)} className="text-[var(--color-text-muted)] hover:text-[var(--color-alert)] transition-colors text-xs font-bold uppercase p-2">✕</button>
+                                        </div>
                                     </div>
                                     <div className="grid grid-cols-4 gap-3">
                                         <div className="flex flex-col gap-1">
