@@ -252,7 +252,7 @@ function App() {
     setView('WORKOUT_DASHBOARD');
   };
 
-  const finishWorkout = (sessionLogs) => {
+  const finishWorkout = (sessionLogs, targetExercises) => {
     const activeDay = selectedPlan.days[selectedDayIndex];
 
     // V2: Use Array for robustness and ID preservation
@@ -260,7 +260,13 @@ function App() {
 
     if (sessionLogs) {
       Object.entries(sessionLogs).forEach(([exId, sets]) => {
-        const exercise = activeDay.exercises.find(e => e.id == exId);
+        // Priority: Look in the exercises passed from the session (includes Ad-Hoc)
+        // Fallback: Look in the active day (standard plan exercises)
+        let exercise = targetExercises?.find(e => e.id == exId);
+        if (!exercise) {
+          exercise = activeDay.exercises.find(e => e.id == exId);
+        }
+
         // Robustness: Even if exercise lookup fails (rare), we try to preserve data if possible,
         // though here we rely on the plan data. 
         if (exercise) {
