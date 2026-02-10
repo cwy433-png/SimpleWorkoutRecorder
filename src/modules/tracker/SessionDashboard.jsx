@@ -105,19 +105,43 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
         }
     }, []);
 
-    const getLastLog = (exerciseName) => {
+    const getLastLog = (exerciseName, exerciseId) => {
         if (!historyData || !Array.isArray(historyData)) return null;
+
+        // Get today's date (for comparison)
+        const today = new Date();
+        const todayDateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
         // Iterate through history (Newest -> Oldest)
         for (const record of historyData) {
             if (!record || !record.logs) continue;
 
+            // Skip workouts from today (we want to show PREVIOUS session, not earlier today)
+            const recordDate = new Date(record.date);
+            const recordDateString = `${recordDate.getFullYear()}-${String(recordDate.getMonth() + 1).padStart(2, '0')}-${String(recordDate.getDate()).padStart(2, '0')}`;
+            if (recordDateString === todayDateString) {
+                continue; // Skip today's workouts
+            }
+
             // V2 Format: Array of logs
             if (Array.isArray(record.logs)) {
-                // Try to find by name (robustness)
-                const logEntry = record.logs.find(l => l.exerciseName === exerciseName);
-                if (logEntry && logEntry.sets) {
-                    return logEntry.sets;
+                // Priority 1: Match by ID (Stable across renames)
+                if (exerciseId) {
+                    const logById = record.logs.find(l => l.exerciseId === exerciseId);
+                    if (logById && logById.sets) return logById.sets;
+                }
+
+                // Priority 2: Match by Name (Exact)
+                const logByName = record.logs.find(l => l.exerciseName === exerciseName);
+                if (logByName && logByName.sets) return logByName.sets;
+
+                // Priority 3: Match by Name (Fuzzy - trimming/case)
+                if (exerciseName) {
+                    const normalizedName = exerciseName.trim().toLowerCase();
+                    const logByFuzzyName = record.logs.find(l =>
+                        l.exerciseName && l.exerciseName.trim().toLowerCase() === normalizedName
+                    );
+                    if (logByFuzzyName && logByFuzzyName.sets) return logByFuzzyName.sets;
                 }
             }
             // V1 Format: Object keyed by name
@@ -297,7 +321,7 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
                                         <ExerciseLogger
                                             exercise={ex}
                                             history={logs}
-                                            lastSessionLogs={getLastLog(ex.name)}
+                                            lastSessionLogs={getLastLog(ex.name, ex.id)}
                                             onSaveSet={(data) => handleSaveSet(ex.id, data)}
                                             onNext={(action) => {
                                                 if (action === 'REST_START') {
@@ -348,10 +372,10 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
                     onClick={() => {
                         if (completedCount < totalExercises) {
                             if (window.confirm("You have incomplete exercises. Finish anyway?")) {
-                                onFinishWorkout(sessionLogs);
+                                onFinishWorkout(sessionLogs, sessionExercises);
                             }
                         } else {
-                            onFinishWorkout(sessionLogs);
+                            onFinishWorkout(sessionLogs, sessionExercises);
                         }
                     }}
                 >
