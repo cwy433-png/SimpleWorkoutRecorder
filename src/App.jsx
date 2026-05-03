@@ -101,6 +101,7 @@ const STYLES = [
 function App() {
   const [view, setView] = useState('HOME');
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [workoutScrolledToBottom, setWorkoutScrolledToBottom] = useState(false);
 
   // Global workout session (active workout state survives view switches & reloads).
   // dayIndex is owned by the session context once a workout starts.
@@ -318,6 +319,12 @@ function App() {
     setView('WORKOUT_DASHBOARD');
   };
 
+  useEffect(() => {
+    if (view !== 'WORKOUT_DASHBOARD') {
+      setWorkoutScrolledToBottom(false);
+    }
+  }, [view]);
+
   const handleDiscardSession = () => {
     const msg = session.isCrossDay()
       ? 'Discard this stale workout from a previous day?'
@@ -354,6 +361,8 @@ function App() {
           <SessionDashboard
             onFinishWorkout={finishWorkout}
             onBack={() => setView(selectedPlan ? 'PLAN_DETAIL' : 'HOME')}
+            isBottomNavVisible={showNav}
+            onBottomReachChange={setWorkoutScrolledToBottom}
           />
         );
       case 'HISTORY':
@@ -366,7 +375,9 @@ function App() {
     }
   };
 
-  const showNav = ['HOME', 'PLANS_LIST', 'HISTORY', 'AI_COACH'].includes(view) && !isKeyboardOpen;
+  const showNav = ['HOME', 'PLANS_LIST', 'PLAN_DETAIL', 'WORKOUT_DASHBOARD', 'HISTORY', 'AI_COACH'].includes(view)
+    && !isKeyboardOpen
+    && (view !== 'WORKOUT_DASHBOARD' || workoutScrolledToBottom);
   const sessionIsCrossDay = session.isCrossDay();
 
   return (
@@ -410,7 +421,7 @@ function App() {
       {/* Bottom Navigation */}
       {/* Bottom Navigation */}
       {showNav && (
-        <div className={`fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none animate-in slide-in-from-bottom-5 duration-500 ${currentStyle.id === 'rhodes' ? 'bottom-0' : 'bottom-6'}`}>
+        <div className={`fixed left-0 right-0 z-50 flex justify-center pointer-events-none animate-in slide-in-from-bottom-5 duration-500 ${currentStyle.id === 'rhodes' ? 'bottom-0' : 'bottom-6'}`}>
           <nav className={`pointer-events-auto transition-all duration-500 flex items-center 
             ${currentStyle.id === 'rhodes'
               ? (view === 'HOME'
