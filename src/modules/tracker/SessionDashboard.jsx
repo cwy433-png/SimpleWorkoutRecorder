@@ -6,7 +6,7 @@ import { ExerciseLogger } from './ExerciseLogger';
 import { RestTimer } from './RestTimer';
 import { useWorkoutSession } from './SessionContext';
 
-export const SessionDashboard = ({ onFinishWorkout, onBack }) => {
+export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible = false, onBottomReachChange }) => {
     const {
         state,
         setExpanded,
@@ -35,6 +35,7 @@ export const SessionDashboard = ({ onFinishWorkout, onBack }) => {
     );
     const [isAddingExercise, setIsAddingExercise] = useState(false);
     const [newExerciseName, setNewExerciseName] = useState('');
+    const listRef = useRef(null);
     const scrollRefs = useRef({});
 
     const formatTime = (s) => {
@@ -76,6 +77,18 @@ export const SessionDashboard = ({ onFinishWorkout, onBack }) => {
             setHistoryData([]);
         }
     }, []);
+
+    const handleListScroll = () => {
+        const list = listRef.current;
+        if (!list || !onBottomReachChange) return;
+        const isAtBottom = list.scrollHeight - list.scrollTop - list.clientHeight <= 12;
+        onBottomReachChange(isAtBottom);
+    };
+
+    useEffect(() => {
+        const frame = requestAnimationFrame(handleListScroll);
+        return () => cancelAnimationFrame(frame);
+    }, [sessionExercises.length, expandedExerciseId, isAddingExercise]);
 
     // RestTimer reads initialSeconds once via its useEffect[initialSeconds].
     // Memoize so the value is stable across parent re-renders within a single
@@ -219,7 +232,7 @@ export const SessionDashboard = ({ onFinishWorkout, onBack }) => {
             </div>
 
             {/* Accordion List */}
-            <div className="flex-1 overflow-auto flex flex-col gap-3 pb-48 px-1 no-scrollbar">
+            <div ref={listRef} onScroll={handleListScroll} className="flex-1 overflow-auto flex flex-col gap-3 pb-48 px-1 no-scrollbar">
                 {sessionExercises.map((ex, index) => {
                     const logs = sessionLogs[ex.id] || [];
                     const setsDone = logs.length;
@@ -344,7 +357,7 @@ export const SessionDashboard = ({ onFinishWorkout, onBack }) => {
             </div>
 
             {/* Footer Action */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-[var(--color-bg)] border-t border-[var(--color-border)] z-40">
+            <div className={`fixed left-0 right-0 p-4 bg-[var(--color-bg)] border-t border-[var(--color-border)] z-40 transition-[bottom] duration-300 ${isBottomNavVisible ? 'bottom-24' : 'bottom-0'}`}>
                 <Button
                     className={`w-full py-4 text-xl font-black italic tracking-tight shadow-xl ${completedCount === totalExercises ? '' : 'text-[var(--color-text-muted)] opacity-80'}`}
                     variant={completedCount === totalExercises ? 'primary' : 'secondary'}
