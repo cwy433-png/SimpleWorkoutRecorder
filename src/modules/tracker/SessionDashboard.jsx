@@ -188,15 +188,31 @@ export const SessionDashboard = ({ onFinishWorkout, onBack }) => {
     return (
         <div className="flex flex-col h-full animate-in fade-in duration-300 relative">
             {/* Top Bar (Fixed) */}
-            <div className="flex justify-between items-end mb-4 px-2 pt-2">
+            <div className="flex justify-between items-end gap-3 mb-4 px-2 pt-2">
                 <div>
                     <Button variant="ghost" size="sm" onClick={onBack} className="mb-2 text-[var(--color-text-muted)] pl-0 hover:text-[var(--color-text-main)]">&larr; Exit</Button>
                     <h2 className="text-3xl font-black italic text-[var(--color-text-main)] uppercase tracking-tighter leading-none">
                         {activeDay.name}
                     </h2>
                 </div>
-                <div className="text-right flex flex-col items-end gap-1">
+                <div className="text-right flex flex-col items-end gap-2 shrink-0">
                     <div className="font-mono text-xl font-black text-[var(--color-primary)] tracking-tight">{formatTime(duration)}</div>
+                    <Button
+                        size="sm"
+                        className={`px-3 py-2 text-[10px] font-black italic tracking-tight whitespace-nowrap ${completedCount === totalExercises ? '' : 'text-[var(--color-text-muted)] opacity-80'}`}
+                        variant={completedCount === totalExercises ? 'primary' : 'secondary'}
+                        onClick={() => {
+                            if (completedCount < totalExercises) {
+                                if (window.confirm("You have incomplete exercises. Finish anyway?")) {
+                                    onFinishWorkout(sessionLogs, sessionExercises);
+                                }
+                            } else {
+                                onFinishWorkout(sessionLogs, sessionExercises);
+                            }
+                        }}
+                    >
+                        {completedCount === totalExercises ? 'FINISH' : 'FINISH NOW'}
+                    </Button>
                 </div>
             </div>
 
@@ -219,7 +235,7 @@ export const SessionDashboard = ({ onFinishWorkout, onBack }) => {
             </div>
 
             {/* Accordion List */}
-            <div className="flex-1 overflow-auto flex flex-col gap-3 pb-32 px-1 no-scrollbar">
+            <div className="flex-1 overflow-auto flex flex-col gap-3 pb-8 px-1 no-scrollbar">
                 {sessionExercises.map((ex, index) => {
                     const logs = sessionLogs[ex.id] || [];
                     const setsDone = logs.length;
@@ -343,24 +359,6 @@ export const SessionDashboard = ({ onFinishWorkout, onBack }) => {
                 )}
             </div>
 
-            {/* Footer Action */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-[var(--color-bg)] border-t border-[var(--color-border)] z-20">
-                <Button
-                    className={`w-full py-4 text-xl font-black italic tracking-tight shadow-xl ${completedCount === totalExercises ? '' : 'text-[var(--color-text-muted)] opacity-80'}`}
-                    variant={completedCount === totalExercises ? 'primary' : 'secondary'}
-                    onClick={() => {
-                        if (completedCount < totalExercises) {
-                            if (window.confirm("You have incomplete exercises. Finish anyway?")) {
-                                onFinishWorkout(sessionLogs, sessionExercises);
-                            }
-                        } else {
-                            onFinishWorkout(sessionLogs, sessionExercises);
-                        }
-                    }}
-                >
-                    {completedCount === totalExercises ? 'FINISH WORKOUT 🏆' : 'FINISH NOW (INCOMPLETE)'}
-                </Button>
-            </div>
             {/* Global Floating Rest Timer */}
             {restState.isActive && (
                 <div className="fixed top-24 left-0 right-0 z-50 animate-in slide-in-from-top-4 fade-in duration-300 pointer-events-none flex justify-center">

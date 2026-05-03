@@ -366,7 +366,7 @@ function App() {
     }
   };
 
-  const showNav = ['HOME', 'PLANS_LIST', 'HISTORY', 'AI_COACH'].includes(view) && !isKeyboardOpen;
+  const showNav = ['HOME', 'PLANS_LIST', 'PLAN_DETAIL', 'WORKOUT_DASHBOARD', 'HISTORY', 'AI_COACH'].includes(view) && !isKeyboardOpen;
   const sessionIsCrossDay = session.isCrossDay();
 
   return (
