@@ -1,27 +1,40 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 
 import { ExerciseLogger } from './ExerciseLogger';
 import { RestTimer } from './RestTimer';
+import { useWorkoutSession } from './SessionContext';
 
-export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) => {
-    // 1. Safe Data derivation (Hooks must run first)
+export const SessionDashboard = ({ onFinishWorkout, onBack }) => {
+    const {
+        state,
+        setExpanded,
+        saveSet,
+        addAdHocExercise,
+        startRest,
+        stopRest,
+    } = useWorkoutSession();
+
+    const {
+        plan,
+        dayIndex,
+        sessionExercises,
+        sessionLogs,
+        expandedExerciseId,
+        startTime,
+        restState,
+    } = state;
+
+    // Derived
     const activeDay = plan?.days?.[dayIndex];
-    const initialExercises = activeDay?.exercises?.filter(e => !!e) || [];
 
-    // 2. Hooks
-    const [sessionLogs, setSessionLogs] = useState({});
-    const [expandedExerciseId, setExpandedExerciseId] = useState(null);
-    const [startTime] = useState(Date.now());
-    const [duration, setDuration] = useState(0);
-
-    // Local state for exercises
-    const [sessionExercises, setSessionExercises] = useState(initialExercises);
+    // Local UI-only state
+    const [duration, setDuration] = useState(() =>
+        startTime ? Math.floor((Date.now() - startTime) / 1000) : 0
+    );
     const [isAddingExercise, setIsAddingExercise] = useState(false);
     const [newExerciseName, setNewExerciseName] = useState('');
-
-    // Refs and Helpers
     const scrollRefs = useRef({});
 
     const formatTime = (s) => {
@@ -30,19 +43,15 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
         return `${min}:${sec < 10 ? '0' : ''}${sec}`;
     };
 
+    // Workout duration tick
     useEffect(() => {
+        if (!startTime) return undefined;
+        setDuration(Math.floor((Date.now() - startTime) / 1000));
         const timer = setInterval(() => {
             setDuration(Math.floor((Date.now() - startTime) / 1000));
         }, 1000);
         return () => clearInterval(timer);
     }, [startTime]);
-
-    useEffect(() => {
-        // Reset/Sync if props change violently (rare in this app flow)
-        if (activeDay) {
-            setSessionExercises(activeDay.exercises?.filter(e => !!e) || []);
-        }
-    }, [activeDay]);
 
     // Auto-scroll to expanded item
     useEffect(() => {
@@ -51,49 +60,12 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
         }
     }, [expandedExerciseId]);
 
-    // 3. Render Error if data missing (AFTER hooks)
-    if (!activeDay) {
-        return (
-            <div className="flex flex-col items-center justify-center h-full p-10 text-center space-y-4">
-                <div className="text-red-500 font-bold text-xl">Error: Workout Data Not Found</div>
-                <div className="text-white/50 text-sm">Plan: {plan?.title || 'None'}, Day Index: {dayIndex}</div>
-                <Button onClick={onBack}>Go Back</Button>
-            </div>
-        );
-    }
-
-    const toggleExpand = (id) => {
-        setExpandedExerciseId(prev => prev === id ? null : id);
-    };
-
-    const handleSaveSet = (exerciseId, setData) => {
-        if (setData.isRestUpdate) {
-            // Update the last log for this exercise
-            setSessionLogs(prev => {
-                const existing = prev[exerciseId] || [];
-                if (existing.length === 0) return prev; // Should not happen
-
-                const lastLog = { ...existing[existing.length - 1], restTime: setData.restTime };
-                const newLogs = [...existing.slice(0, -1), lastLog];
-                return { ...prev, [exerciseId]: newLogs };
-            });
-            return;
-        }
-
-        const setWithTime = { ...setData, timestamp: Date.now() };
-        setSessionLogs(prev => {
-            const existing = prev[exerciseId] || [];
-            return { ...prev, [exerciseId]: [...existing, setWithTime] };
-        });
-    };
-
-    // History Lookup
+    // History Lookup (one-time read of saved history for "Last" column)
     const [historyData, setHistoryData] = useState([]);
     useEffect(() => {
         try {
             const raw = localStorage.getItem('workout_history');
             const savedHistory = raw ? JSON.parse(raw) : [];
-            // Ensure it's an array
             if (Array.isArray(savedHistory)) {
                 setHistoryData(savedHistory);
             } else {
@@ -105,37 +77,57 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
         }
     }, []);
 
+    // RestTimer reads initialSeconds once via its useEffect[initialSeconds].
+    // Memoize so the value is stable across parent re-renders within a single
+    // rest period (only recomputes when endTime changes). On dashboard remount
+    // (view switch), this recomputes with the now-current Date.now() so the
+    // countdown resumes against the absolute endTime stored in context.
+    const restInitialSeconds = useMemo(() => {
+        if (!restState.endTime) return restState.target;
+        // eslint-disable-next-line react-hooks/purity -- intentional snapshot at remount/period-start; recomputation bounded by deps
+        return Math.ceil((restState.endTime - Date.now()) / 1000);
+    }, [restState.endTime, restState.target]);
+
+    // Render Error if data missing (after hooks)
+    if (!activeDay) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full p-10 text-center space-y-4">
+                <div className="text-red-500 font-bold text-xl">Error: Workout Data Not Found</div>
+                <div className="text-white/50 text-sm">Plan: {plan?.title || 'None'}, Day Index: {dayIndex}</div>
+                <Button onClick={onBack}>Go Back</Button>
+            </div>
+        );
+    }
+
+    const toggleExpand = (id) => setExpanded(id);
+
+    const handleSaveSet = (exerciseId, setData) => saveSet(exerciseId, setData);
+
     const getLastLog = (exerciseName, exerciseId) => {
         if (!historyData || !Array.isArray(historyData)) return null;
 
-        // Get today's date (for comparison)
         const today = new Date();
         const todayDateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-        // Iterate through history (Newest -> Oldest)
         for (const record of historyData) {
             if (!record || !record.logs) continue;
 
-            // Skip workouts from today (we want to show PREVIOUS session, not earlier today)
             const recordDate = new Date(record.date);
             const recordDateString = `${recordDate.getFullYear()}-${String(recordDate.getMonth() + 1).padStart(2, '0')}-${String(recordDate.getDate()).padStart(2, '0')}`;
             if (recordDateString === todayDateString) {
-                continue; // Skip today's workouts
+                continue;
             }
 
             // V2 Format: Array of logs
             if (Array.isArray(record.logs)) {
-                // Priority 1: Match by ID (Stable across renames)
                 if (exerciseId) {
                     const logById = record.logs.find(l => l.exerciseId === exerciseId);
                     if (logById && logById.sets) return logById.sets;
                 }
 
-                // Priority 2: Match by Name (Exact)
                 const logByName = record.logs.find(l => l.exerciseName === exerciseName);
                 if (logByName && logByName.sets) return logByName.sets;
 
-                // Priority 3: Match by Name (Fuzzy - trimming/case)
                 if (exerciseName) {
                     const normalizedName = exerciseName.trim().toLowerCase();
                     const logByFuzzyName = record.logs.find(l =>
@@ -157,9 +149,11 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
     const handleNextExercise = (currentIndex) => {
         const nextIndex = currentIndex + 1;
         if (nextIndex < sessionExercises.length) {
-            setExpandedExerciseId(sessionExercises[nextIndex].id);
-        } else {
-            setExpandedExerciseId(null);
+            const nextId = sessionExercises[nextIndex].id;
+            // setExpanded toggles; only dispatch if not already expanded
+            if (expandedExerciseId !== nextId) setExpanded(nextId);
+        } else if (expandedExerciseId) {
+            setExpanded(expandedExerciseId); // toggles current to closed
         }
     };
 
@@ -173,11 +167,11 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
             rpe: 8,
             isAdHoc: true
         };
-        setSessionExercises([...sessionExercises, newEx]);
+        addAdHocExercise(newEx);
         setNewExerciseName('');
         setIsAddingExercise(false);
         // Auto expand the new one
-        setTimeout(() => setExpandedExerciseId(newEx.id), 100);
+        setTimeout(() => setExpanded(newEx.id), 100);
     };
 
     // Progress Stats
@@ -187,23 +181,9 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
         return logs && logs.length >= (ex.sets || 3);
     });
     const completedCount = completedWrapper.length;
-    const progressPercent = Math.round((completedCount / totalExercises) * 100);
-
-    // Rest Timer State (Global)
-    const [restState, setRestState] = useState({ isActive: false, endTime: null, totalDuration: 0, target: 90 });
-
-    const handleStartRest = (targetSeconds = 90) => {
-        setRestState({
-            isActive: true,
-            endTime: Date.now() + targetSeconds * 1000,
-            target: targetSeconds,
-            totalDuration: 0
-        });
-    };
-
-    const handleStopRest = () => {
-        setRestState(prev => ({ ...prev, isActive: false }));
-    };
+    const progressPercent = totalExercises > 0
+        ? Math.round((completedCount / totalExercises) * 100)
+        : 0;
 
     return (
         <div className="flex flex-col h-full animate-in fade-in duration-300 relative">
@@ -325,8 +305,7 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
                                             onSaveSet={(data) => handleSaveSet(ex.id, data)}
                                             onNext={(action) => {
                                                 if (action === 'REST_START') {
-                                                    // Start Rest (Default 90s or exercise specific)
-                                                    handleStartRest(ex.rest || 90);
+                                                    startRest(ex.rest || 90);
                                                 } else {
                                                     handleNextExercise(index);
                                                 }
@@ -383,20 +362,20 @@ export const SessionDashboard = ({ plan, dayIndex, onFinishWorkout, onBack }) =>
                 </Button>
             </div>
             {/* Global Floating Rest Timer */}
-            {/* Global Floating Rest Timer */}
             {restState.isActive && (
                 <div className="fixed top-24 left-0 right-0 z-50 animate-in slide-in-from-top-4 fade-in duration-300 pointer-events-none flex justify-center">
                     <div className="pointer-events-auto bg-black border border-[var(--color-primary)]/30 rounded-full px-4 py-1.5 flex items-center gap-3 shadow-[0_8px_30px_rgba(0,0,0,0.8)] scale-90 backdrop-blur-md">
                         <span className="text-[9px] font-black uppercase text-[var(--color-primary)] tracking-widest whitespace-nowrap">Rest</span>
                         <div className="min-w-[50px] flex justify-center">
                             <RestTimer
-                                initialSeconds={restState.target}
+                                key={restState.endTime}
+                                initialSeconds={restInitialSeconds}
                                 onStop={() => { }}
                             />
                         </div>
                         <Button
                             size="sm"
-                            onClick={handleStopRest}
+                            onClick={stopRest}
                             className="h-6 w-10 rounded-full bg-[var(--color-primary)] text-black font-black text-[10px] hover:scale-105 transition-transform p-0"
                         >
                             GO
