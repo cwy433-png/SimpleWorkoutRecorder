@@ -410,7 +410,7 @@ function App() {
       {/* Bottom Navigation */}
       {/* Bottom Navigation */}
       {showNav && (
-        <div className={`fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none animate-in slide-in-from-bottom-5 duration-500 ${currentStyle.id === 'rhodes' ? 'bottom-0' : 'bottom-6'}`}>
+        <div className={`fixed left-0 right-0 z-50 flex justify-center pointer-events-none animate-in slide-in-from-bottom-5 duration-500 ${view === 'WORKOUT_DASHBOARD' ? 'bottom-24' : (currentStyle.id === 'rhodes' ? 'bottom-0' : 'bottom-6')}`}>
           <nav className={`pointer-events-auto transition-all duration-500 flex items-center 
             ${currentStyle.id === 'rhodes'
               ? (view === 'HOME'
