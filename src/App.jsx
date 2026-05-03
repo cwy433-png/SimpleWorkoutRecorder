@@ -5,6 +5,7 @@ import './index.css';
 import { PlanManager } from './modules/plans/PlanManager';
 import { PlanDetail } from './modules/plans/PlanDetail';
 import { SessionDashboard } from './modules/tracker/SessionDashboard';
+import { useWorkoutSession } from './modules/tracker/SessionContext';
 import { HistoryManager } from './modules/history/HistoryManager';
 import { AiManager } from './modules/ai/AiManager';
 import { Button } from './components/ui/Button';
@@ -100,7 +101,10 @@ const STYLES = [
 function App() {
   const [view, setView] = useState('HOME');
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const [selectedDayIndex, setSelectedDayIndex] = useState(null);
+
+  // Global workout session (active workout state survives view switches & reloads).
+  // dayIndex is owned by the session context once a workout starts.
+  const session = useWorkoutSession();
 
   // Quote Packs State
   const [enabledQuotePacks, setEnabledQuotePacks] = useState(() => {
@@ -248,12 +252,23 @@ function App() {
   };
 
   const handleStartWorkout = (dayIndex) => {
-    setSelectedDayIndex(dayIndex);
+    session.startSession(selectedPlan, dayIndex);
     setView('WORKOUT_DASHBOARD');
   };
 
   const finishWorkout = (sessionLogs, targetExercises) => {
-    const activeDay = selectedPlan.days[selectedDayIndex];
+    // Read plan/dayIndex from session state — it's the source of truth and
+    // survives reloads, unlike the App-level selectedPlan which is null on restore.
+    const sessionPlan = session.state.plan;
+    const sessionDayIndex = session.state.dayIndex;
+    const activeDay = sessionPlan?.days?.[sessionDayIndex];
+
+    if (!activeDay) {
+      // Defensive: nothing to write, just clear and bail
+      session.endSession();
+      setView('HOME');
+      return;
+    }
 
     // V2: Use Array for robustness and ID preservation
     const logsArray = [];
@@ -267,12 +282,10 @@ function App() {
           exercise = activeDay.exercises.find(e => e.id == exId);
         }
 
-        // Robustness: Even if exercise lookup fails (rare), we try to preserve data if possible,
-        // though here we rely on the plan data. 
         if (exercise) {
           logsArray.push({
-            exerciseId: exercise.id, // Primary Key (Stable)
-            exerciseName: exercise.name, // Fallback Key (Readable)
+            exerciseId: exercise.id,
+            exerciseName: exercise.name,
             sets: sets,
             timestamp: Date.now()
           });
@@ -283,11 +296,10 @@ function App() {
     const workoutRecord = {
       id: Date.now(),
       date: Date.now(),
-      planTitle: selectedPlan.title,
+      planTitle: sessionPlan.title,
       dayName: activeDay.name,
-      logs: logsArray, // V2 Format
+      logs: logsArray,
       duration: 0,
-      // Meta field for future extensibility (e.g. from imports)
       meta: {
         appVersion: '0.1.0',
         source: 'manual_session'
@@ -298,8 +310,22 @@ function App() {
     const newHistory = [workoutRecord, ...existingHistory];
     localStorage.setItem('workout_history', JSON.stringify(newHistory));
 
+    session.endSession();
     setView('HOME');
-    // alert("Workout Saved Successfully!"); 
+  };
+
+  const handleResumeSession = () => {
+    setView('WORKOUT_DASHBOARD');
+  };
+
+  const handleDiscardSession = () => {
+    const msg = session.isCrossDay()
+      ? 'Discard this stale workout from a previous day?'
+      : 'Discard the current workout? Progress will be lost.';
+    if (window.confirm(msg)) {
+      session.discardSession();
+      if (view === 'WORKOUT_DASHBOARD') setView('HOME');
+    }
   };
 
   const getHomeComponent = () => {
@@ -326,10 +352,8 @@ function App() {
       case 'WORKOUT_DASHBOARD':
         return (
           <SessionDashboard
-            plan={selectedPlan}
-            dayIndex={selectedDayIndex}
             onFinishWorkout={finishWorkout}
-            onBack={() => setView('PLAN_DETAIL')}
+            onBack={() => setView(selectedPlan ? 'PLAN_DETAIL' : 'HOME')}
           />
         );
       case 'HISTORY':
@@ -343,6 +367,7 @@ function App() {
   };
 
   const showNav = ['HOME', 'PLANS_LIST', 'HISTORY', 'AI_COACH'].includes(view) && !isKeyboardOpen;
+  const sessionIsCrossDay = session.isCrossDay();
 
   return (
     <div className="flex flex-col min-h-screen text-text-main font-sans selection:bg-primary selection:text-black transition-colors duration-500">
@@ -350,6 +375,37 @@ function App() {
       <main className={`flex-1 flex flex-col relative w-full max-w-md mx-auto ${showNav && !(currentStyle.id === 'rhodes' && view === 'HOME') ? 'pb-24' : ''}`}>
         {renderContent()}
       </main>
+
+      {/* Resume Workout Pill — visible on any view except the dashboard itself */}
+      {session.state.isActive && view !== 'WORKOUT_DASHBOARD' && (
+        <div className="fixed top-3 left-0 right-0 z-40 flex justify-center pointer-events-none animate-in slide-in-from-top-4 fade-in duration-300 px-4">
+          <div className={`pointer-events-auto flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-full backdrop-blur-md shadow-2xl border ${sessionIsCrossDay
+            ? 'bg-amber-500/15 border-amber-400/50'
+            : 'bg-black/80 border-[var(--color-primary)]/40'
+            }`}>
+            <button
+              onClick={handleResumeSession}
+              className="flex items-center gap-2 pr-2"
+            >
+              <span className={`w-2 h-2 rounded-full animate-pulse ${sessionIsCrossDay ? 'bg-amber-400' : 'bg-[var(--color-primary)]'
+                }`} />
+              <span className="text-[10px] font-black uppercase tracking-widest text-white">
+                {sessionIsCrossDay ? 'Stale Workout' : 'Resume Workout'}
+              </span>
+              <span className="text-[10px] font-bold text-white/60 truncate max-w-[100px] uppercase tracking-tight">
+                {session.state.plan?.days?.[session.state.dayIndex]?.name || ''}
+              </span>
+            </button>
+            <button
+              onClick={handleDiscardSession}
+              aria-label="Discard workout"
+              className="text-white/50 hover:text-white text-base w-6 h-6 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center leading-none"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Navigation */}
       {/* Bottom Navigation */}
