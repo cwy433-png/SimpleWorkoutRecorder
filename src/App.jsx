@@ -5,6 +5,7 @@ import './index.css';
 import { PlanManager } from './modules/plans/PlanManager';
 import { PlanDetail } from './modules/plans/PlanDetail';
 import { SessionDashboard } from './modules/tracker/SessionDashboard';
+import { FloatingRestTimer } from './modules/tracker/FloatingRestTimer';
 import { useWorkoutSession } from './modules/tracker/SessionContext';
 import { HistoryManager } from './modules/history/HistoryManager';
 import { AiManager } from './modules/ai/AiManager';
@@ -190,6 +191,7 @@ function App() {
     root.style.setProperty('--color-text-muted', theme.textMuted);
     root.style.setProperty('--color-text-muted', theme.textMuted);
     root.style.setProperty('--color-border', theme.border);
+    root.style.setProperty('--color-primary-ink', theme.type === 'light' ? '#1a2e05' : '#0b0b0d');
 
     // Force Browser Color Scheme (User Preference Override)
     // This prevents Android/iOS "Dark Mode" from forcibly darkening our Light Theme
@@ -386,6 +388,12 @@ function App() {
       <main className={`flex-1 flex flex-col relative w-full max-w-md mx-auto ${showNav && !(currentStyle.id === 'rhodes' && view === 'HOME') ? 'pb-24' : ''}`}>
         {renderContent()}
       </main>
+
+      <FloatingRestTimer
+        showFinishBar={view === 'WORKOUT_DASHBOARD'}
+        isBottomNavVisible={showNav}
+        primaryInk={currentTheme.type === 'light' ? '#1a2e05' : '#0b0b0d'}
+      />
 
       {/* Resume Workout Pill — visible on any view except the dashboard itself */}
       {session.state.isActive && view !== 'WORKOUT_DASHBOARD' && (

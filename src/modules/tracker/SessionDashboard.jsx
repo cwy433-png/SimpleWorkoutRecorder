@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 
 import { ExerciseLogger } from './ExerciseLogger';
-import { RestTimer } from './RestTimer';
 import { useWorkoutSession } from './SessionContext';
 
 export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible = false, onBottomReachChange }) => {
@@ -13,7 +12,6 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
         saveSet,
         addAdHocExercise,
         startRest,
-        stopRest,
     } = useWorkoutSession();
 
     const {
@@ -23,7 +21,6 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
         sessionLogs,
         expandedExerciseId,
         startTime,
-        restState,
     } = state;
 
     // Derived
@@ -89,17 +86,6 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
         const frame = requestAnimationFrame(handleListScroll);
         return () => cancelAnimationFrame(frame);
     }, [sessionExercises.length, expandedExerciseId, isAddingExercise]);
-
-    // RestTimer reads initialSeconds once via its useEffect[initialSeconds].
-    // Memoize so the value is stable across parent re-renders within a single
-    // rest period (only recomputes when endTime changes). On dashboard remount
-    // (view switch), this recomputes with the now-current Date.now() so the
-    // countdown resumes against the absolute endTime stored in context.
-    const restInitialSeconds = useMemo(() => {
-        if (!restState.endTime) return restState.target;
-        // eslint-disable-next-line react-hooks/purity -- intentional snapshot at remount/period-start; recomputation bounded by deps
-        return Math.ceil((restState.endTime - Date.now()) / 1000);
-    }, [restState.endTime, restState.target]);
 
     // Render Error if data missing (after hooks)
     if (!activeDay) {
@@ -318,7 +304,7 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
                                             onSaveSet={(data) => handleSaveSet(ex.id, data)}
                                             onNext={(action) => {
                                                 if (action === 'REST_START') {
-                                                    startRest(ex.rest || 90);
+                                                    startRest(ex.id, ex.targetRest || 90);
                                                 } else {
                                                     handleNextExercise(index);
                                                 }
@@ -375,28 +361,6 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
                 </Button>
             </div>
 
-            {/* Global Floating Rest Timer */}
-            {restState.isActive && (
-                <div className="fixed top-24 left-0 right-0 z-50 animate-in slide-in-from-top-4 fade-in duration-300 pointer-events-none flex justify-center">
-                    <div className="pointer-events-auto bg-black border border-[var(--color-primary)]/30 rounded-full px-4 py-1.5 flex items-center gap-3 shadow-[0_8px_30px_rgba(0,0,0,0.8)] scale-90 backdrop-blur-md">
-                        <span className="text-[9px] font-black uppercase text-[var(--color-primary)] tracking-widest whitespace-nowrap">Rest</span>
-                        <div className="min-w-[50px] flex justify-center">
-                            <RestTimer
-                                key={restState.endTime}
-                                initialSeconds={restInitialSeconds}
-                                onStop={() => { }}
-                            />
-                        </div>
-                        <Button
-                            size="sm"
-                            onClick={stopRest}
-                            className="h-6 w-10 rounded-full bg-[var(--color-primary)] text-black font-black text-[10px] hover:scale-105 transition-transform p-0"
-                        >
-                            GO
-                        </Button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
