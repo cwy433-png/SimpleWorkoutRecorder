@@ -117,13 +117,6 @@ function App() {
 
   // Random Quote Logic
   const [quote, setQuote] = useState({ text: "Loading...", author: "System" });
-  useEffect(() => {
-    const quotes = getEnabledQuotes(enabledQuotePacks);
-    if (quotes.length > 0) {
-      const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
-      setQuote(randomQuote);
-    }
-  }, []); // Run once on mount
 
   // Mobile Keyboard Detection
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
@@ -188,7 +181,6 @@ function App() {
     root.style.setProperty('--color-bg', theme.bg);
     root.style.setProperty('--color-surface', theme.surface);
     root.style.setProperty('--color-text-main', theme.textMain);
-    root.style.setProperty('--color-text-muted', theme.textMuted);
     root.style.setProperty('--color-text-muted', theme.textMuted);
     root.style.setProperty('--color-border', theme.border);
     root.style.setProperty('--color-primary-ink', theme.type === 'light' ? '#1a2e05' : '#0b0b0d');
