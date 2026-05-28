@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useMemo, useReducer, useRe
 const STORAGE_KEY = 'active_session';
 const PERSIST_DEBOUNCE_MS = 300;
 const DEFAULT_REST_SECONDS = 90;
+const inactiveRestState = { isActive: false, startTime: null, target: DEFAULT_REST_SECONDS, exerciseId: null };
 
 const initialState = {
     isActive: false,
@@ -12,8 +13,22 @@ const initialState = {
     sessionLogs: {},
     expandedExerciseId: null,
     startTime: null,
-    restState: { isActive: false, endTime: null, target: DEFAULT_REST_SECONDS, totalDuration: 0 },
+    restState: inactiveRestState,
 };
+
+function normalizeRestState(restState) {
+    if (!restState) return inactiveRestState;
+    const target = restState.target || DEFAULT_REST_SECONDS;
+    const startTime = restState.startTime
+        || (restState.endTime ? restState.endTime - target * 1000 : null);
+
+    return {
+        isActive: Boolean(restState.isActive && startTime),
+        startTime,
+        target,
+        exerciseId: restState.exerciseId || null,
+    };
+}
 
 function reducer(state, action) {
     switch (action.type) {
@@ -29,14 +44,19 @@ function reducer(state, action) {
                 sessionLogs: {},
                 expandedExerciseId: null,
                 startTime: Date.now(),
-                restState: { isActive: false, endTime: null, target: DEFAULT_REST_SECONDS, totalDuration: 0 },
+                restState: inactiveRestState,
             };
         }
         case 'END_SESSION':
         case 'DISCARD_SESSION':
             return initialState;
         case 'RESTORE_SESSION':
-            return { ...initialState, ...action.payload, isActive: true };
+            return {
+                ...initialState,
+                ...action.payload,
+                isActive: true,
+                restState: normalizeRestState(action.payload.restState),
+            };
         case 'SET_EXPANDED':
             return {
                 ...state,
@@ -75,15 +95,35 @@ function reducer(state, action) {
                 ...state,
                 restState: {
                     isActive: true,
-                    endTime: Date.now() + action.target * 1000,
-                    target: action.target,
-                    totalDuration: 0,
+                    startTime: Date.now(),
+                    target: action.target || DEFAULT_REST_SECONDS,
+                    exerciseId: action.exerciseId,
                 },
             };
+        case 'COMMIT_REST': {
+            const exerciseId = action.exerciseId || state.restState.exerciseId;
+            const elapsed = Math.max(0, Math.floor(action.elapsed || 0));
+            const existing = exerciseId ? state.sessionLogs[exerciseId] || [] : [];
+            if (!exerciseId || existing.length === 0) {
+                return {
+                    ...state,
+                    restState: inactiveRestState,
+                };
+            }
+            const lastLog = { ...existing[existing.length - 1], restTime: elapsed };
+            return {
+                ...state,
+                sessionLogs: {
+                    ...state.sessionLogs,
+                    [exerciseId]: [...existing.slice(0, -1), lastLog],
+                },
+                restState: inactiveRestState,
+            };
+        }
         case 'STOP_REST':
             return {
                 ...state,
-                restState: { ...state.restState, isActive: false },
+                restState: inactiveRestState,
             };
         default:
             return state;
@@ -97,7 +137,12 @@ function loadInitialState() {
         if (!raw) return initialState;
         const parsed = JSON.parse(raw);
         if (!parsed || !parsed.isActive) return initialState;
-        return { ...initialState, ...parsed, isActive: true };
+        return {
+            ...initialState,
+            ...parsed,
+            isActive: true,
+            restState: normalizeRestState(parsed.restState),
+        };
     } catch (e) {
         console.error('Failed to restore active_session', e);
         return initialState;
@@ -156,7 +201,8 @@ export function WorkoutSessionProvider({ children }) {
             setExpanded: (id) => dispatch({ type: 'SET_EXPANDED', id }),
             saveSet: (exerciseId, setData) => dispatch({ type: 'SAVE_SET', exerciseId, setData }),
             addAdHocExercise: (exercise) => dispatch({ type: 'ADD_AD_HOC_EXERCISE', exercise }),
-            startRest: (target = DEFAULT_REST_SECONDS) => dispatch({ type: 'START_REST', target }),
+            startRest: (exerciseId, target = DEFAULT_REST_SECONDS) => dispatch({ type: 'START_REST', exerciseId, target }),
+            commitRest: (elapsed) => dispatch({ type: 'COMMIT_REST', elapsed }),
             stopRest: () => dispatch({ type: 'STOP_REST' }),
         };
     }, [state]);

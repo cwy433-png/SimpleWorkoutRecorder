@@ -5,6 +5,7 @@ import './index.css';
 import { PlanManager } from './modules/plans/PlanManager';
 import { PlanDetail } from './modules/plans/PlanDetail';
 import { SessionDashboard } from './modules/tracker/SessionDashboard';
+import { FloatingRestTimer } from './modules/tracker/FloatingRestTimer';
 import { useWorkoutSession } from './modules/tracker/SessionContext';
 import { HistoryManager } from './modules/history/HistoryManager';
 import { AiManager } from './modules/ai/AiManager';
@@ -116,13 +117,6 @@ function App() {
 
   // Random Quote Logic
   const [quote, setQuote] = useState({ text: "Loading...", author: "System" });
-  useEffect(() => {
-    const quotes = getEnabledQuotes(enabledQuotePacks);
-    if (quotes.length > 0) {
-      const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
-      setQuote(randomQuote);
-    }
-  }, []); // Run once on mount
 
   // Mobile Keyboard Detection
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
@@ -188,8 +182,8 @@ function App() {
     root.style.setProperty('--color-surface', theme.surface);
     root.style.setProperty('--color-text-main', theme.textMain);
     root.style.setProperty('--color-text-muted', theme.textMuted);
-    root.style.setProperty('--color-text-muted', theme.textMuted);
     root.style.setProperty('--color-border', theme.border);
+    root.style.setProperty('--color-primary-ink', theme.type === 'light' ? '#1a2e05' : '#0b0b0d');
 
     // Force Browser Color Scheme (User Preference Override)
     // This prevents Android/iOS "Dark Mode" from forcibly darkening our Light Theme
@@ -386,6 +380,12 @@ function App() {
       <main className={`flex-1 flex flex-col relative w-full max-w-md mx-auto ${showNav && !(currentStyle.id === 'rhodes' && view === 'HOME') ? 'pb-24' : ''}`}>
         {renderContent()}
       </main>
+
+      <FloatingRestTimer
+        showFinishBar={view === 'WORKOUT_DASHBOARD'}
+        isBottomNavVisible={showNav}
+        primaryInk={currentTheme.type === 'light' ? '#1a2e05' : '#0b0b0d'}
+      />
 
       {/* Resume Workout Pill — visible on any view except the dashboard itself */}
       {session.state.isActive && view !== 'WORKOUT_DASHBOARD' && (
