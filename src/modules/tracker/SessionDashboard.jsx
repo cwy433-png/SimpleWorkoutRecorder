@@ -102,47 +102,73 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
 
     const handleSaveSet = (exerciseId, setData) => saveSet(exerciseId, setData);
 
-    const getLastLog = (exerciseName, exerciseId) => {
-        if (!historyData || !Array.isArray(historyData)) return null;
+    const normalizeExerciseName = (name) => (name || '').trim().toLowerCase();
+
+    const findExerciseLogInRecord = (record, exerciseName, exerciseId) => {
+        if (!record?.logs) return null;
+        const normalizedName = normalizeExerciseName(exerciseName);
+
+        // V2 Format: Array of logs
+        if (Array.isArray(record.logs)) {
+            if (exerciseId) {
+                const logById = record.logs.find(l => String(l.exerciseId) === String(exerciseId));
+                if (logById?.sets) return logById;
+            }
+
+            const logByName = record.logs.find(l => l.exerciseName === exerciseName);
+            if (logByName?.sets) return logByName;
+
+            if (normalizedName) {
+                const logByFuzzyName = record.logs.find(l =>
+                    normalizeExerciseName(l.exerciseName) === normalizedName
+                );
+                if (logByFuzzyName?.sets) return logByFuzzyName;
+            }
+        }
+
+        // V1 Format: Object keyed by name
+        if (typeof record.logs === 'object') {
+            if (record.logs[exerciseName]) {
+                return { exerciseName, sets: record.logs[exerciseName] };
+            }
+
+            if (normalizedName) {
+                const legacyKey = Object.keys(record.logs).find(key => normalizeExerciseName(key) === normalizedName);
+                if (legacyKey) {
+                    return { exerciseName: legacyKey, sets: record.logs[legacyKey] };
+                }
+            }
+        }
+
+        return null;
+    };
+
+    const getExerciseHistoryLogs = (exerciseName, exerciseId) => {
+        if (!historyData || !Array.isArray(historyData)) return [];
 
         const today = new Date();
         const todayDateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-        for (const record of historyData) {
-            if (!record || !record.logs) continue;
-
-            const recordDate = new Date(record.date);
-            const recordDateString = `${recordDate.getFullYear()}-${String(recordDate.getMonth() + 1).padStart(2, '0')}-${String(recordDate.getDate()).padStart(2, '0')}`;
-            if (recordDateString === todayDateString) {
-                continue;
-            }
-
-            // V2 Format: Array of logs
-            if (Array.isArray(record.logs)) {
-                if (exerciseId) {
-                    const logById = record.logs.find(l => l.exerciseId === exerciseId);
-                    if (logById && logById.sets) return logById.sets;
-                }
-
-                const logByName = record.logs.find(l => l.exerciseName === exerciseName);
-                if (logByName && logByName.sets) return logByName.sets;
-
-                if (exerciseName) {
-                    const normalizedName = exerciseName.trim().toLowerCase();
-                    const logByFuzzyName = record.logs.find(l =>
-                        l.exerciseName && l.exerciseName.trim().toLowerCase() === normalizedName
-                    );
-                    if (logByFuzzyName && logByFuzzyName.sets) return logByFuzzyName.sets;
-                }
-            }
-            // V1 Format: Object keyed by name
-            else if (typeof record.logs === 'object') {
-                if (record.logs[exerciseName]) {
-                    return record.logs[exerciseName];
-                }
-            }
-        }
-        return null;
+        return historyData
+            .filter(record => record?.logs && record.date)
+            .filter(record => {
+                const recordDate = new Date(record.date);
+                const recordDateString = `${recordDate.getFullYear()}-${String(recordDate.getMonth() + 1).padStart(2, '0')}-${String(recordDate.getDate()).padStart(2, '0')}`;
+                return recordDateString !== todayDateString;
+            })
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .map(record => {
+                const log = findExerciseLogInRecord(record, exerciseName, exerciseId);
+                if (!log?.sets?.length) return null;
+                return {
+                    id: `${record.id || record.date}-${log.exerciseId || log.exerciseName || exerciseName}`,
+                    date: record.date,
+                    planTitle: record.planTitle,
+                    dayName: record.dayName,
+                    sets: log.sets,
+                };
+            })
+            .filter(Boolean);
     };
 
     const handleNextExercise = (currentIndex) => {
@@ -300,7 +326,7 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
                                         <ExerciseLogger
                                             exercise={ex}
                                             history={logs}
-                                            lastSessionLogs={getLastLog(ex.name, ex.id)}
+                                            previousSessions={getExerciseHistoryLogs(ex.name, ex.id)}
                                             onSaveSet={(data) => handleSaveSet(ex.id, data)}
                                             onNext={(action) => {
                                                 if (action === 'REST_START') {
