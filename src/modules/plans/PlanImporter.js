@@ -20,18 +20,22 @@ export const parseRawData = (rawData) => {
                 rpe: e.rpe || 8,
                 notes: e.notes || ""
             })) : [],
-            alternativeExercises: Array.isArray(d.alternativeExercises) ? d.alternativeExercises.map(e => ({
-                ...createExercise(e.name),
-                sets: e.sets || 3,
-                reps: e.reps || "10",
-                rpe: e.rpe || 8,
-                targetRest: e.targetRest || 90,
-                notes: e.notes || "",
-                createdFromAdHoc: Boolean(e.createdFromAdHoc),
-                createdAt: e.createdAt,
-                lastUsedAt: e.lastUsedAt,
-                useCount: e.useCount || 0
-            })) : []
+            alternativeExercises: Array.isArray(d.alternativeExercises) ? d.alternativeExercises.map(e => {
+                const baseExercise = createExercise(e.name);
+                return {
+                    ...baseExercise,
+                    id: e.id || baseExercise.id,
+                    sets: e.sets || 3,
+                    reps: e.reps || "10",
+                    rpe: e.rpe || 8,
+                    targetRest: e.targetRest || 90,
+                    notes: e.notes || "",
+                    createdFromAdHoc: Boolean(e.createdFromAdHoc),
+                    createdAt: e.createdAt,
+                    lastUsedAt: e.lastUsedAt,
+                    useCount: e.useCount || 0
+                };
+            }) : []
         }));
     }
     return plan;

@@ -143,25 +143,41 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
 
         if (planIndex === -1) {
             window.alert('Could not find this plan in saved plans.');
-            return null;
+            return { status: 'missing-plan' };
         }
 
         const nextPlans = [...rawPlans];
         const targetPlan = { ...nextPlans[planIndex] };
         const days = [...(targetPlan.days || [])];
-        const targetDayIndex = days.findIndex(day => activeDay?.id && day.id === activeDay.id);
-        const resolvedDayIndex = targetDayIndex >= 0 ? targetDayIndex : dayIndex;
+        let resolvedDayIndex = -1;
+
+        if (activeDay?.id) {
+            resolvedDayIndex = days.findIndex(day => day.id === activeDay.id);
+            if (resolvedDayIndex === -1) {
+                window.alert('This workout day no longer exists in the saved plan. Please restart the workout from the updated plan.');
+                return { status: 'missing-day' };
+            }
+        } else {
+            const fallbackDay = days[dayIndex];
+            const fallbackMatches = fallbackDay && normalizeExerciseName(fallbackDay.name) === normalizeExerciseName(activeDay?.name);
+            if (!fallbackMatches) {
+                window.alert('Could not safely match this workout day in the saved plan.');
+                return { status: 'day-mismatch' };
+            }
+            resolvedDayIndex = dayIndex;
+        }
+
         const targetDay = days[resolvedDayIndex];
 
         if (!targetDay) {
             window.alert('Could not find this workout day in the saved plan.');
-            return null;
+            return { status: 'missing-day' };
         }
 
         const plannedExercises = Array.isArray(targetDay.exercises) ? targetDay.exercises : [];
         const alreadyPlanned = plannedExercises.some(ex => normalizeExerciseName(ex.name) === normalizedName);
         if (alreadyPlanned) {
-            return null;
+            return { status: 'already-planned' };
         }
 
         const alternatives = Array.isArray(targetDay.alternativeExercises)
@@ -193,7 +209,7 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
         nextPlans[planIndex] = targetPlan;
         localStorage.setItem('workout_plans', JSON.stringify(nextPlans));
 
-        return alternativeExercise;
+        return { status: 'saved', exercise: alternativeExercise };
     };
 
     const handleKeepAdHocExercise = (event, exercise) => {
@@ -211,9 +227,15 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
             return;
         }
 
-        const alternativeExercise = persistAlternativeExercise(exercise);
-        if (alternativeExercise) {
-            keepAdHocExercise(exercise.id, alternativeExercise);
+        const result = persistAlternativeExercise(exercise);
+        if (result.status === 'saved') {
+            keepAdHocExercise(exercise.id, result.exercise);
+            return;
+        }
+
+        if (result.status === 'already-planned') {
+            keepAdHocExercise(exercise.id, null);
+            window.alert(`"${exercise.name}" is already a planned exercise for this day.`);
         }
     };
 
@@ -401,21 +423,22 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
                                             {isTargetMet ? '✓' : ''}
                                         </div>
 
-	                                        <div>
-	                                            <h3 className={`font-black italic text-lg uppercase tracking-tight ${isTargetMet ? 'text-[var(--color-text-muted)] line-through' : 'text-[var(--color-text-main)]'}`}>
-	                                                {ex.name} {ex.isAdHoc && (
+                                        <div>
+                                            <h3 className={`font-black italic text-lg uppercase tracking-tight ${isTargetMet ? 'text-[var(--color-text-muted)] line-through' : 'text-[var(--color-text-main)]'}`}>
+                                                {ex.name} {ex.isAdHoc && (
                                                     <button
                                                         type="button"
                                                         onClick={(event) => handleKeepAdHocExercise(event, ex)}
-                                                        className={`text-[10px] border px-1.5 py-0.5 rounded-none not-italic align-middle ml-1 transition-all ${ex.isKept
+                                                        className={`inline-flex min-h-7 items-center border px-2.5 py-1 text-[10px] rounded-none not-italic align-middle ml-1 transition-all ${ex.isKept
                                                             ? 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)]'
                                                             : 'bg-[var(--color-primary)] text-black border-[var(--color-primary)] shadow-[0_0_10px_var(--color-primary)]'
                                                             }`}
+                                                        aria-label={ex.isKept ? `${ex.name} kept as alternative` : `Keep ${ex.name} as an alternative`}
                                                     >
                                                         {ex.isKept ? 'KEPT' : 'KEEP'}
                                                     </button>
                                                 )}
-	                                            </h3>
+                                            </h3>
                                             <div className="flex flex-col gap-2 mt-2 w-full">
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#8E8E93' }}>
