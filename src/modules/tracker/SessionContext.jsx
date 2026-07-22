@@ -90,6 +90,45 @@ function reducer(state, action) {
                 ...state,
                 sessionExercises: [...state.sessionExercises, action.exercise],
             };
+        case 'KEEP_AD_HOC_EXERCISE': {
+            const updatedPlan = action.alternativeExercise && state.plan?.days
+                ? {
+                    ...state.plan,
+                    days: state.plan.days.map((day, index) => {
+                        if (index !== state.dayIndex) return day;
+
+                        const alternatives = Array.isArray(day.alternativeExercises)
+                            ? day.alternativeExercises
+                            : [];
+                        const normalizedName = action.alternativeExercise.name.trim().toLowerCase();
+                        const exists = alternatives.some(ex =>
+                            ex.name && ex.name.trim().toLowerCase() === normalizedName
+                        );
+
+                        return {
+                            ...day,
+                            alternativeExercises: exists
+                                ? alternatives.map(ex =>
+                                    ex.name && ex.name.trim().toLowerCase() === normalizedName
+                                        ? action.alternativeExercise
+                                        : ex
+                                )
+                                : [...alternatives, action.alternativeExercise],
+                        };
+                    }),
+                }
+                : state.plan;
+
+            return {
+                ...state,
+                plan: updatedPlan,
+                sessionExercises: state.sessionExercises.map(ex =>
+                    ex.id === action.exerciseId
+                        ? { ...ex, isKept: true, keptAlternativeId: action.alternativeExercise?.id || ex.keptAlternativeId }
+                        : ex
+                ),
+            };
+        }
         case 'START_REST':
             return {
                 ...state,
@@ -201,6 +240,7 @@ export function WorkoutSessionProvider({ children }) {
             setExpanded: (id) => dispatch({ type: 'SET_EXPANDED', id }),
             saveSet: (exerciseId, setData) => dispatch({ type: 'SAVE_SET', exerciseId, setData }),
             addAdHocExercise: (exercise) => dispatch({ type: 'ADD_AD_HOC_EXERCISE', exercise }),
+            keepAdHocExercise: (exerciseId, alternativeExercise) => dispatch({ type: 'KEEP_AD_HOC_EXERCISE', exerciseId, alternativeExercise }),
             startRest: (exerciseId, target = DEFAULT_REST_SECONDS) => dispatch({ type: 'START_REST', exerciseId, target }),
             commitRest: (elapsed) => dispatch({ type: 'COMMIT_REST', elapsed }),
             stopRest: () => dispatch({ type: 'STOP_REST' }),

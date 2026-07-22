@@ -12,7 +12,8 @@
  * Day {
  *   id: string,
  *   name: string (e.g. "Push Day", "Monday"),
- *   exercises: Exercise[]
+ *   exercises: Exercise[],
+ *   alternativeExercises: Exercise[]
  * }
  * 
  * Exercise {
@@ -44,7 +45,8 @@ export const createPlan = (title = "New Plan") => ({
 export const createDay = (name = "New Day") => ({
     id: generateId(),
     name,
-    exercises: []
+    exercises: [],
+    alternativeExercises: []
 });
 
 export const createExercise = (name = "Exercise") => ({

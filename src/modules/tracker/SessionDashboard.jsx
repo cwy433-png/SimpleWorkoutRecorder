@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 
 import { ExerciseLogger } from './ExerciseLogger';
 import { useWorkoutSession } from './SessionContext';
+
+const createAlternativeId = () => `alt-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible = false, onBottomReachChange }) => {
     const {
@@ -11,6 +13,7 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
         setExpanded,
         saveSet,
         addAdHocExercise,
+        keepAdHocExercise,
         startRest,
     } = useWorkoutSession();
 
@@ -27,9 +30,8 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
     const activeDay = plan?.days?.[dayIndex];
 
     // Local UI-only state
-    const [duration, setDuration] = useState(() =>
-        startTime ? Math.floor((Date.now() - startTime) / 1000) : 0
-    );
+    const [tickNow, setTickNow] = useState(Date.now);
+    const duration = startTime ? Math.floor((tickNow - startTime) / 1000) : 0;
     const [isAddingExercise, setIsAddingExercise] = useState(false);
     const [newExerciseName, setNewExerciseName] = useState('');
     const listRef = useRef(null);
@@ -44,9 +46,8 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
     // Workout duration tick
     useEffect(() => {
         if (!startTime) return undefined;
-        setDuration(Math.floor((Date.now() - startTime) / 1000));
         const timer = setInterval(() => {
-            setDuration(Math.floor((Date.now() - startTime) / 1000));
+            setTickNow(Date.now());
         }, 1000);
         return () => clearInterval(timer);
     }, [startTime]);
@@ -59,33 +60,30 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
     }, [expandedExerciseId]);
 
     // History Lookup (one-time read of saved history for "Last" column)
-    const [historyData, setHistoryData] = useState([]);
-    useEffect(() => {
+    const [historyData] = useState(() => {
         try {
             const raw = localStorage.getItem('workout_history');
             const savedHistory = raw ? JSON.parse(raw) : [];
             if (Array.isArray(savedHistory)) {
-                setHistoryData(savedHistory);
-            } else {
-                setHistoryData([]);
+                return savedHistory;
             }
         } catch (e) {
             console.error("Failed to load history", e);
-            setHistoryData([]);
         }
+        return [];
     }, []);
 
-    const handleListScroll = () => {
+    const handleListScroll = useCallback(() => {
         const list = listRef.current;
         if (!list || !onBottomReachChange) return;
         const isAtBottom = list.scrollHeight - list.scrollTop - list.clientHeight <= 12;
         onBottomReachChange(isAtBottom);
-    };
+    }, [onBottomReachChange]);
 
     useEffect(() => {
         const frame = requestAnimationFrame(handleListScroll);
         return () => cancelAnimationFrame(frame);
-    }, [sessionExercises.length, expandedExerciseId, isAddingExercise]);
+    }, [handleListScroll, sessionExercises.length, expandedExerciseId, isAddingExercise]);
 
     // Render Error if data missing (after hooks)
     if (!activeDay) {
@@ -103,6 +101,143 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
     const handleSaveSet = (exerciseId, setData) => saveSet(exerciseId, setData);
 
     const normalizeExerciseName = (name) => (name || '').trim().toLowerCase();
+
+    const activeDayAlternatives = Array.isArray(activeDay?.alternativeExercises)
+        ? activeDay.alternativeExercises
+        : [];
+
+    const isExerciseAlreadyInSession = (exercise) => {
+        const normalizedName = normalizeExerciseName(exercise?.name);
+        if (!normalizedName) return false;
+        return sessionExercises.some(ex =>
+            ex.id === exercise.id || normalizeExerciseName(ex.name) === normalizedName
+        );
+    };
+
+    const addExerciseToSession = (exercise) => {
+        if (!exercise?.name) return;
+
+        const existing = sessionExercises.find(ex =>
+            ex.id === exercise.id || normalizeExerciseName(ex.name) === normalizeExerciseName(exercise.name)
+        );
+        if (existing) {
+            if (expandedExerciseId !== existing.id) setExpanded(existing.id);
+            return;
+        }
+
+        const sessionExercise = {
+            ...exercise,
+            isAdHoc: true,
+            isKept: true,
+            sourceAlternativeId: exercise.id,
+        };
+        addAdHocExercise(sessionExercise);
+        setTimeout(() => setExpanded(sessionExercise.id), 100);
+    };
+
+    const persistAlternativeExercise = (exercise) => {
+        const normalizedName = normalizeExerciseName(exercise.name);
+        const now = new Date().toISOString();
+        const rawPlans = JSON.parse(localStorage.getItem('workout_plans') || '[]');
+        const planIndex = rawPlans.findIndex(p => String(p.id) === String(plan?.id));
+
+        if (planIndex === -1) {
+            window.alert('Could not find this plan in saved plans.');
+            return { status: 'missing-plan' };
+        }
+
+        const nextPlans = [...rawPlans];
+        const targetPlan = { ...nextPlans[planIndex] };
+        const days = [...(targetPlan.days || [])];
+        let resolvedDayIndex = -1;
+
+        if (activeDay?.id) {
+            resolvedDayIndex = days.findIndex(day => day.id === activeDay.id);
+            if (resolvedDayIndex === -1) {
+                window.alert('This workout day no longer exists in the saved plan. Please restart the workout from the updated plan.');
+                return { status: 'missing-day' };
+            }
+        } else {
+            const fallbackDay = days[dayIndex];
+            const fallbackMatches = fallbackDay && normalizeExerciseName(fallbackDay.name) === normalizeExerciseName(activeDay?.name);
+            if (!fallbackMatches) {
+                window.alert('Could not safely match this workout day in the saved plan.');
+                return { status: 'day-mismatch' };
+            }
+            resolvedDayIndex = dayIndex;
+        }
+
+        const targetDay = days[resolvedDayIndex];
+
+        if (!targetDay) {
+            window.alert('Could not find this workout day in the saved plan.');
+            return { status: 'missing-day' };
+        }
+
+        const plannedExercises = Array.isArray(targetDay.exercises) ? targetDay.exercises : [];
+        const alreadyPlanned = plannedExercises.some(ex => normalizeExerciseName(ex.name) === normalizedName);
+        if (alreadyPlanned) {
+            return { status: 'already-planned' };
+        }
+
+        const alternatives = Array.isArray(targetDay.alternativeExercises)
+            ? targetDay.alternativeExercises
+            : [];
+        const existingAlternative = alternatives.find(ex => normalizeExerciseName(ex.name) === normalizedName);
+        const alternativeExercise = {
+            ...(existingAlternative || {}),
+            id: existingAlternative?.id || createAlternativeId(),
+            name: exercise.name.trim(),
+            sets: exercise.sets || 3,
+            reps: exercise.reps || '8-12',
+            rpe: exercise.rpe || 8,
+            targetRest: exercise.targetRest || 90,
+            notes: exercise.notes || '',
+            createdFromAdHoc: true,
+            createdAt: existingAlternative?.createdAt || now,
+            lastUsedAt: now,
+            useCount: (existingAlternative?.useCount || 0) + 1,
+        };
+
+        days[resolvedDayIndex] = {
+            ...targetDay,
+            alternativeExercises: existingAlternative
+                ? alternatives.map(ex => normalizeExerciseName(ex.name) === normalizedName ? alternativeExercise : ex)
+                : [...alternatives, alternativeExercise],
+        };
+        targetPlan.days = days;
+        nextPlans[planIndex] = targetPlan;
+        localStorage.setItem('workout_plans', JSON.stringify(nextPlans));
+
+        return { status: 'saved', exercise: alternativeExercise };
+    };
+
+    const handleKeepAdHocExercise = (event, exercise) => {
+        event.stopPropagation();
+        if (!exercise?.isAdHoc || exercise.isKept) return;
+
+        const confirmed = window.confirm(`Add "${exercise.name}" to ${activeDay.name} alternatives?`);
+        if (!confirmed) return;
+
+        const normalizedName = normalizeExerciseName(exercise.name);
+        const alreadyPlanned = (activeDay.exercises || []).some(ex => normalizeExerciseName(ex.name) === normalizedName);
+        if (alreadyPlanned) {
+            keepAdHocExercise(exercise.id, null);
+            window.alert(`"${exercise.name}" is already a planned exercise for this day.`);
+            return;
+        }
+
+        const result = persistAlternativeExercise(exercise);
+        if (result.status === 'saved') {
+            keepAdHocExercise(exercise.id, result.exercise);
+            return;
+        }
+
+        if (result.status === 'already-planned') {
+            keepAdHocExercise(exercise.id, null);
+            window.alert(`"${exercise.name}" is already a planned exercise for this day.`);
+        }
+    };
 
     const findExerciseLogInRecord = (record, exerciseName, exerciseId) => {
         if (!record?.logs) return null;
@@ -290,7 +425,19 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
 
                                         <div>
                                             <h3 className={`font-black italic text-lg uppercase tracking-tight ${isTargetMet ? 'text-[var(--color-text-muted)] line-through' : 'text-[var(--color-text-main)]'}`}>
-                                                {ex.name} {ex.isAdHoc && <span className="text-[10px] bg-[var(--color-surface)] border border-[var(--color-border)] px-1 rounded text-[var(--color-text-muted)] not-italic font-normal align-middle ml-1">TEMP</span>}
+                                                {ex.name} {ex.isAdHoc && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(event) => handleKeepAdHocExercise(event, ex)}
+                                                        className={`inline-flex min-h-7 items-center border px-2.5 py-1 text-[10px] rounded-none not-italic align-middle ml-1 transition-all ${ex.isKept
+                                                            ? 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)]'
+                                                            : 'bg-[var(--color-primary)] text-black border-[var(--color-primary)] shadow-[0_0_10px_var(--color-primary)]'
+                                                            }`}
+                                                        aria-label={ex.isKept ? `${ex.name} kept as alternative` : `Keep ${ex.name} as an alternative`}
+                                                    >
+                                                        {ex.isKept ? 'KEPT' : 'KEEP'}
+                                                    </button>
+                                                )}
                                             </h3>
                                             <div className="flex flex-col gap-2 mt-2 w-full">
                                                 <div className="flex justify-between items-center">
@@ -345,27 +492,53 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
                 })}
 
                 {/* ADD EXERCISE BUTTON */}
-                {!isAddingExercise ? (
-                    <Button variant="ghost" onClick={() => setIsAddingExercise(true)} className="border-dashed border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:border-[var(--color-primary)] py-4">
-                        + ADD AD-HOC EXERCISE
-                    </Button>
-                ) : (
-                    <div className="p-4 bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] animate-in fade-in slide-in-from-bottom-2">
-                        <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase mb-2 block">New Exercise Name</label>
-                        <div className="flex gap-2">
-                            <input
-                                autoFocus
-                                className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-4 py-2 text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none"
-                                value={newExerciseName}
-                                onChange={e => setNewExerciseName(e.target.value)}
-                                placeholder="e.g. Pushups"
-                                onKeyDown={e => e.key === 'Enter' && handleAddAdHocExercise()}
-                            />
-                            <Button onClick={handleAddAdHocExercise} variant="primary" className="font-black italic">ADD</Button>
+                <div className="flex flex-col gap-3">
+                    {activeDayAlternatives.length > 0 && (
+                        <div className="p-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-none">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Kept Alternatives</div>
+                            <div className="flex flex-wrap gap-2">
+                                {activeDayAlternatives.map(exercise => {
+                                    const alreadyAdded = isExerciseAlreadyInSession(exercise);
+                                    return (
+                                        <button
+                                            key={exercise.id}
+                                            type="button"
+                                            onClick={() => addExerciseToSession(exercise)}
+                                            className={`px-2.5 py-1.5 border text-[10px] font-black uppercase tracking-wider transition-all ${alreadyAdded
+                                                ? 'border-[var(--color-border)] text-[var(--color-text-muted)] opacity-50'
+                                                : 'border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black'
+                                                }`}
+                                        >
+                                            {alreadyAdded ? 'ADDED ' : '+ '}{exercise.name}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => setIsAddingExercise(false)} className="mt-2 text-xs text-[var(--color-text-muted)] w-full">Cancel</Button>
-                    </div>
-                )}
+                    )}
+
+                    {!isAddingExercise ? (
+                        <Button variant="ghost" onClick={() => setIsAddingExercise(true)} className="border-dashed border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:border-[var(--color-primary)] py-4">
+                            + ADD AD-HOC EXERCISE
+                        </Button>
+                    ) : (
+                        <div className="p-4 bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] animate-in fade-in slide-in-from-bottom-2">
+                            <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase mb-2 block">New Exercise Name</label>
+                            <div className="flex gap-2">
+                                <input
+                                    autoFocus
+                                    className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-4 py-2 text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none"
+                                    value={newExerciseName}
+                                    onChange={e => setNewExerciseName(e.target.value)}
+                                    placeholder="e.g. Pushups"
+                                    onKeyDown={e => e.key === 'Enter' && handleAddAdHocExercise()}
+                                />
+                                <Button onClick={handleAddAdHocExercise} variant="primary" className="font-black italic">ADD</Button>
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={() => setIsAddingExercise(false)} className="mt-2 text-xs text-[var(--color-text-muted)] w-full">Cancel</Button>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Footer Action */}
