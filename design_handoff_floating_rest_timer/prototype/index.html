@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Floating Rest Timer · Design Exploration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: #f0eee9;
+      overflow: hidden;
+    }
+    #root { width: 100vw; height: 100vh; }
+
+    /* Shared animation: subtle pulse when timer crosses target */
+    @keyframes restPulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.025); }
+    }
+    /* One-shot border flash + slight pop on the instant elapsed crosses target
+       (iOS PWA stand-in for navigator.vibrate) */
+    @keyframes restDing {
+      0%   { transform: scale(1);    box-shadow: 0 0 0 0 rgba(132,204,22,0.5); }
+      40%  { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(132,204,22,0.25); }
+      100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(132,204,22,0); }
+    }
+    /* Outward halo ring drawn behind the widget during the ding */
+    @keyframes restHalo {
+      0%   { opacity: 0.9; transform: scale(1);    }
+      100% { opacity: 0;   transform: scale(1.45); }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="mock.jsx"></script>
+  <script type="text/babel" src="timers.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
+
+  <script type="text/babel" data-presets="env,react">
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
