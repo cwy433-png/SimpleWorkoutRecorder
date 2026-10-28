@@ -1,5 +1,4 @@
-import yaml from 'js-yaml';
-import * as XLSX from 'xlsx';
+// js-yaml and xlsx are imported on demand inside parseFile so they stay out of the main bundle.
 import { createPlan, createDay, createExercise } from './PlanModel';
 
 // Helper to normalize different inputs into our strict Plan Model
@@ -47,7 +46,7 @@ export const parseFile = async (file) => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
 
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             const content = e.target.result;
             try {
                 let rawData = null;
@@ -56,11 +55,13 @@ export const parseFile = async (file) => {
                     rawData = JSON.parse(content);
                 }
                 else if (extension === 'yaml' || extension === 'yml') {
+                    const yaml = await import('js-yaml');
                     rawData = yaml.load(content);
                 }
                 else if (extension === 'xlsx' || extension === 'xls') {
                     // Excel Logic:
                     // Assumption: Sheet 1. Columns: Day | Exercise | Sets | Reps | RPE
+                    const XLSX = await import('xlsx');
                     const workbook = XLSX.read(content, { type: 'binary' });
                     const sheetName = workbook.SheetNames[0];
                     const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
