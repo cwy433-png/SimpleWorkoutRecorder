@@ -124,10 +124,24 @@ function readJson(storage, key, fallback) {
   }
 }
 
-/** Everything needed to restore the app's data. Never includes theme or style keys. */
+/** Everything needed to restore the app's data. Never includes theme or style keys.
+ *  Stored history that cannot be read as an array is kept verbatim as `workout_history_raw`
+ *  (and `workout_history` is omitted) so a backup never silently exports an empty history. */
 export function createBackup(storage, now) {
+  const rawHistory = storage.getItem('workout_history');
+  let history = [];
+  let unreadable = false;
+  if (rawHistory !== null && rawHistory !== undefined && rawHistory !== '') {
+    try {
+      const parsed = JSON.parse(rawHistory);
+      if (Array.isArray(parsed)) history = parsed;
+      else unreadable = true;
+    } catch {
+      unreadable = true;
+    }
+  }
   return {
-    workout_history: readJson(storage, 'workout_history', []),
+    ...(unreadable ? { workout_history_raw: rawHistory } : { workout_history: history }),
     workout_plans: readJson(storage, 'workout_plans', []),
     default_plan_id: storage.getItem('default_plan_id') ?? null,
     enabled_quote_packs: readJson(storage, 'enabled_quote_packs', null),

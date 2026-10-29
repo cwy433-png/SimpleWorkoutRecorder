@@ -50,7 +50,11 @@ export const DataView = () => {
 
   const exportBackup = () => {
     const now = Date.now();
-    downloadJson(createBackup(localStorage, now), `workout-recorder-backup-${localDateStamp(now)}.json`);
+    const backup = createBackup(localStorage, now);
+    downloadJson(backup, `workout-recorder-backup-${localDateStamp(now)}.json`);
+    if ('workout_history_raw' in backup) {
+      dialog.notify('HISTORY UNREADABLE — RAW COPY SAVED', { tone: 'danger' });
+    }
   };
 
   const onFileChosen = async (e) => {

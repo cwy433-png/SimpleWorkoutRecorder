@@ -130,6 +130,20 @@ describe('backup and restore', () => {
     expect(backup.enabled_quote_packs).toBeNull();
   });
 
+  it('keeps the raw string when stored history is unreadable, instead of exporting []', () => {
+    const bad = createBackup(fakeStorage({ workout_history: 'not json' }), 0);
+    expect(bad.workout_history_raw).toBe('not json');
+    expect(bad).not.toHaveProperty('workout_history');
+    const notArray = createBackup(fakeStorage({ workout_history: '{"a":1}' }), 0);
+    expect(notArray.workout_history_raw).toBe('{"a":1}');
+    expect(notArray).not.toHaveProperty('workout_history');
+    // restore never writes the raw copy back
+    const mem = fakeStorage();
+    expect(restoreBackup(bad, mem)).not.toContain('workout_history');
+    expect(mem.getItem('workout_history')).toBeNull();
+    expect(mem.getItem('workout_history_raw')).toBeNull();
+  });
+
   it('restores only the allowed keys and ignores theme keys', () => {
     const mem = fakeStorage();
     expect(restoreBackup({ workout_history: [], app_style: { id: 'cyber' }, app_theme: { type: 'dark' } }, mem)).toEqual(['workout_history']);
