@@ -1,0 +1,131 @@
+<style>
+  .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+  .ph { width: 280px; height: 600px; margin: 0 auto; background: #fff; border: 1px solid #e4e4e7; position: relative; overflow: hidden; font-family: Inter, system-ui, sans-serif; color: #09090b; text-align: left; }
+  .top { padding: 12px 14px 10px; border-bottom: 1px solid #e4e4e7; display: flex; justify-content: space-between; align-items: flex-end; }
+  .tag { font-size: 8px; letter-spacing: .18em; color: #65a30d; font-weight: 700; }
+  .h { font-size: 19px; font-weight: 900; letter-spacing: .02em; margin-top: 2px; text-transform: uppercase; }
+  .sub { font-size: 8px; color: #71717a; letter-spacing: .12em; margin-top: 2px; }
+  .pad { padding: 10px 14px; }
+  .day { border: 1px solid #e4e4e7; background: #f4f4f5; position: relative; margin-bottom: 8px; display: flex; align-items: stretch; }
+  .day::before { content: ''; position: absolute; top: -1px; left: -1px; width: 6px; height: 6px; border-top: 1.5px solid #84cc16; border-left: 1.5px solid #84cc16; }
+  .day.next { border-color: #84cc16; background: #fff; }
+  .day .bd { flex: 1; padding: 9px 10px; }
+  .day .t { font-size: 13px; font-weight: 900; text-transform: uppercase; }
+  .day .m { font-size: 7px; color: #71717a; letter-spacing: .15em; margin-top: 2px; }
+  .day .nx { font-size: 6.5px; letter-spacing: .18em; color: #3f6212; background: #ecfccb; padding: 1px 4px; margin-left: 6px; font-weight: 700; vertical-align: 2px; }
+  .day ul { list-style: none; margin: 6px 0 0; padding: 0; }
+  .day li { display: flex; justify-content: space-between; font-size: 9px; padding: 2px 0; }
+  .day li span:last-child { color: #71717a; }
+  .day .go { width: 26px; display: flex; align-items: center; justify-content: center; border-left: 1px solid #e4e4e7; color: #65a30d; font-size: 16px; }
+  .day.next .go { background: #f7fee7; border-left-color: #84cc16; }
+  .pill { font-size: 8px; letter-spacing: .15em; font-weight: 700; border: 1px solid #84cc16; color: #3f6212; padding: 4px 6px; background: #f7fee7; }
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px 14px 0; }
+  .tabs div { text-align: center; font-size: 8px; letter-spacing: .18em; font-weight: 700; padding: 5px 0; border: 1px solid #e4e4e7; color: #71717a; }
+  .tabs div.on { border: 2px solid #84cc16; color: #3f6212; }
+  .mh { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px 4px; }
+  .mh b { font-size: 13px; font-weight: 900; letter-spacing: .05em; }
+  .mh span { color: #a1a1aa; font-size: 12px; }
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); padding: 0 10px; row-gap: 2px; }
+  .cal .w { text-align: center; font-size: 6.5px; letter-spacing: .1em; color: #a1a1aa; font-weight: 700; padding: 3px 0; }
+  .cal .d { height: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; position: relative; }
+  .cal .d.e { visibility: hidden; }
+  .cal .d .mk { display: flex; gap: 2px; margin-top: 2px; height: 4px; }
+  .cal .d .s { width: 4px; height: 4px; background: #84cc16; }
+  .cal .d .c { width: 4px; height: 4px; border-radius: 50%; background: #38bdf8; }
+  .cal .d.sel { outline: 2px solid #84cc16; outline-offset: -2px; background: #f7fee7; }
+  .cal .d.today { color: #65a30d; }
+  .cal .d.today::after { content: ''; position: absolute; top: 3px; right: 6px; width: 3px; height: 3px; background: #65a30d; }
+  .leg { display: flex; gap: 10px; justify-content: center; font-size: 6.5px; color: #71717a; letter-spacing: .12em; padding: 4px 0 6px; }
+  .leg i { display: inline-block; width: 5px; height: 5px; margin-right: 3px; vertical-align: 0; }
+  .dl { padding: 6px 14px 0; border-top: 1px solid #e4e4e7; }
+  .dl .lab { font-size: 7px; letter-spacing: .2em; color: #71717a; font-weight: 700; margin: 4px 0 6px; }
+  .rec { border: 1px solid #e4e4e7; padding: 7px 9px; margin-bottom: 6px; }
+  .rec .r1 { display: flex; justify-content: space-between; align-items: baseline; }
+  .rec .t { font-size: 10.5px; font-weight: 900; text-transform: uppercase; }
+  .rec .tm { font-size: 7.5px; color: #71717a; }
+  .rec .r2 { display: flex; gap: 12px; margin-top: 5px; font-size: 8px; }
+  .rec .r2 b { font-weight: 800; }
+  .rec .k { font-size: 6.5px; letter-spacing: .18em; color: #71717a; font-weight: 700; }
+  .badge { font-size: 6px; letter-spacing: .15em; font-weight: 700; padding: 1px 4px; border: 1px solid #e4e4e7; color: #71717a; margin-left: 6px; vertical-align: 1px; }
+  .badge.c { border-color: #38bdf8; color: #0369a1; }
+  .elink { font-size: 7.5px; letter-spacing: .18em; color: #65a30d; font-weight: 700; }
+  .nav { position: absolute; left: 0; right: 0; bottom: 0; height: 34px; border-top: 1px solid #e4e4e7; background: #fff; display: flex; justify-content: space-around; align-items: center; font-size: 7px; color: #a1a1aa; }
+  .nav .on { color: #65a30d; }
+  .note { font-size: 13px; line-height: 1.7; }
+</style>
+
+<h2>选训练日页 + 历史页（带日历）</h2>
+<p class="subtitle">左边：去掉 START，整张卡片点进去就开始。右边：历史页完整的样子，日历保留，只是换成新风格。</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="daypicker" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#fafafa">
+      <div class="ph mono">
+        <div class="top"><div><div class="tag">&gt;_ PLAN</div><div class="h">Excel Plan</div><div class="sub">2 TRAINING DAYS · TAP A DAY TO START</div></div></div>
+        <div class="pad">
+          <div class="day next">
+            <div class="bd">
+              <div><span class="t">Pull</span><span class="nx">NEXT UP</span></div>
+              <div class="m">1 EXERCISE · LAST: 6D AGO</div>
+              <ul><li><span>Deadlift</span><span>3 × 5</span></li></ul>
+            </div>
+            <div class="go">›</div>
+          </div>
+          <div class="day">
+            <div class="bd">
+              <div><span class="t">Push</span></div>
+              <div class="m">2 EXERCISES · LAST: 2D AGO</div>
+              <ul><li><span>Bench Press</span><span>4 × 6-8</span></li><li><span>Overhead Press</span><span>3 × 8</span></li></ul>
+            </div>
+            <div class="go">›</div>
+          </div>
+        </div>
+        <div class="nav"><span>⌂</span><span class="on">▤ FILES</span><span>▦</span><span>✦</span></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>① 选训练日：整张卡片可点</h3>
+      <p>没有 START 按钮，点卡片任何地方就开始这一天。右边一条窄窄的 › 提示"可以点"。LAST 是这个训练日上次练的时间。NEXT UP 绿框标的是最久没练的那天，这是我额外加的提示，之前没讨论过，不要可以去掉。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="logs" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#fafafa">
+      <div class="ph mono">
+        <div class="top"><div><div class="tag">&gt;_ LOGS</div><div class="h">History</div></div><span class="pill">+ CARDIO</span></div>
+        <div class="tabs"><div class="on">HISTORY</div><div>TOOLS (1RM)</div></div>
+        <div class="mh"><span>‹</span><b>OCT 2026</b><span>›</span></div>
+        <div class="cal">
+          <div class="w">M</div><div class="w">T</div><div class="w">W</div><div class="w">T</div><div class="w">F</div><div class="w">S</div><div class="w">S</div>
+          <div class="d e">0</div><div class="d e">0</div><div class="d e">0</div>
+          <div class="d">1</div><div class="d">2<span class="mk"><i class="s"></i></span></div><div class="d">3</div><div class="d">4<span class="mk"><i class="c"></i></span></div>
+          <div class="d">5<span class="mk"><i class="s"></i></span></div><div class="d">6</div><div class="d">7<span class="mk"><i class="s"></i></span></div><div class="d">8<span class="mk"><i class="c"></i></span></div><div class="d">9<span class="mk"><i class="s"></i></span></div><div class="d">10</div><div class="d">11</div>
+          <div class="d">12<span class="mk"><i class="s"></i></span></div><div class="d">13</div><div class="d">14<span class="mk"><i class="s"></i><i class="c"></i></span></div><div class="d">15</div><div class="d">16<span class="mk"><i class="s"></i></span></div><div class="d">17</div><div class="d">18<span class="mk"><i class="c"></i></span></div>
+          <div class="d">19<span class="mk"><i class="s"></i></span></div><div class="d">20</div><div class="d">21<span class="mk"><i class="s"></i></span></div><div class="d">22</div><div class="d">23<span class="mk"><i class="s"></i></span></div><div class="d">24<span class="mk"><i class="c"></i></span></div><div class="d">25</div>
+          <div class="d">26</div><div class="d sel">27<span class="mk"><i class="s"></i><i class="c"></i></span></div><div class="d">28</div><div class="d today">29</div><div class="d">30</div><div class="d">31</div><div class="d e">0</div>
+        </div>
+        <div class="leg"><span><i style="background:#84cc16"></i>STRENGTH</span><span><i style="background:#38bdf8;border-radius:50%"></i>CARDIO</span></div>
+        <div class="dl">
+          <div class="lab">OCT 27 · TUE</div>
+          <div class="rec">
+            <div class="r1"><div><span class="t">Push</span><span class="badge">STRENGTH</span></div><span class="tm">18:42</span></div>
+            <div class="r2"><span><span class="k">TIME </span><b>58</b>m</span><span><span class="k">RPE </span><b>7</b></span><span><span class="k">LOAD </span><b>406</b></span></div>
+          </div>
+          <div class="rec">
+            <div class="r1"><div><span class="t">Run</span><span class="badge c">CARDIO</span></div><span class="elink">EDIT</span></div>
+            <div class="r2"><span><span class="k">TIME </span><b>42</b>m</span><span><span class="k">RPE </span><b>5</b></span><span><span class="k">LOAD </span><b>210</b></span></div>
+          </div>
+        </div>
+        <div class="nav"><span>⌂</span><span>▤</span><span class="on">▦ LOGS</span><span>✦</span></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>② 历史页：日历保留</h3>
+      <p>日历跟现在一样是整月视图，换成新风格，并且改成周一开头，跟封面的"本周"保持一致。每天下面用小标记区分：绿方块是力量，蓝圆点是有氧。点某一天，下面列出当天的记录。</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="note">月度统计卡片（MONTHLY PERFORMANCE）也保留，在当天记录下面，换成新风格。这里没画出来。</p>

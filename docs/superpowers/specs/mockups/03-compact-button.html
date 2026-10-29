@@ -1,0 +1,163 @@
+<style>
+  .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+  .ph { width: 270px; height: 540px; margin: 0 auto; background: #fff; border: 1px solid #e4e4e7; position: relative; overflow: hidden; font-family: Inter, system-ui, sans-serif; color: #09090b; text-align: left; }
+  .top { padding: 12px 14px 10px; border-bottom: 1px solid #e4e4e7; }
+  .tag { font-size: 8px; letter-spacing: .18em; color: #65a30d; font-weight: 700; }
+  .h { font-size: 19px; font-weight: 900; letter-spacing: .02em; margin-top: 2px; text-transform: uppercase; }
+  .sub { font-size: 8px; color: #71717a; letter-spacing: .12em; margin-top: 2px; }
+  .pad { padding: 10px 14px; }
+  .card2 { border: 1px solid #e4e4e7; background: #f4f4f5; position: relative; margin-bottom: 8px; }
+  .card2::before { content: ''; position: absolute; top: -1px; left: -1px; width: 6px; height: 6px; border-top: 1.5px solid #84cc16; border-left: 1.5px solid #84cc16; }
+  .card2.act { border-color: #84cc16; background: #fff; }
+  .ch { padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .ch .t { font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .02em; }
+  .ch .m { font-size: 7px; color: #71717a; letter-spacing: .15em; margin-top: 2px; }
+  .pct { font-size: 8px; color: #65a30d; font-weight: 700; }
+  .tbl { margin: 0 10px; border-top: 1px solid #e4e4e7; }
+  .tr { display: grid; grid-template-columns: 18px 1fr 1fr; font-size: 9px; padding: 5px 0; border-bottom: 1px solid #f4f4f5; }
+  .tr.hd { font-size: 6.5px; letter-spacing: .2em; color: #71717a; font-weight: 700; }
+  .tr .now { color: #09090b; font-weight: 700; }
+  .tr .last { color: #a1a1aa; }
+  .inp { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 6px; margin: 10px; }
+  .inp .lab { font-size: 6.5px; letter-spacing: .2em; color: #71717a; font-weight: 700; margin-bottom: 3px; }
+  .inp .f { height: 34px; border: 1px solid #e4e4e7; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; }
+  .inp .f.on { border-color: #84cc16; }
+  /* compact C */
+  .cc { height: 38px; position: relative; }
+  .cc .shell { position: absolute; inset: 0; border: 2px solid #84cc16; background: #f7fee7; clip-path: polygon(0 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%); }
+  .cc .shell::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #84cc16; }
+  .cc .txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; letter-spacing: .22em; color: #09090b; }
+  .cc.sm { height: 28px; width: 74px; flex-shrink: 0; }
+  .cc.sm .shell { clip-path: polygon(0 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%); }
+  .cc.sm .txt { font-size: 9px; letter-spacing: .18em; padding-left: 3px; }
+  /* full C */
+  .fc { height: 52px; position: relative; }
+  .fc .shell { position: absolute; inset: 0; border: 2px solid #84cc16; background: #f7fee7; clip-path: polygon(0 0,100% 0,100% 70%,94% 100%,0 100%); }
+  .fc .shell::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #84cc16; }
+  .fc .txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 16px 0 18px; }
+  .fc small { display: block; font-size: 6.5px; letter-spacing: .3em; color: #65a30d; font-weight: 700; }
+  .fc strong { font-size: 15px; font-weight: 900; }
+  .fc .chev { font-size: 20px; color: #65a30d; }
+  .ex { list-style: none; margin: 0; padding: 0 10px 8px; }
+  .ex li { display: flex; justify-content: space-between; font-size: 9px; padding: 3px 0; }
+  .ex li span:last-child { color: #71717a; }
+  .rec { border: 1px solid #e4e4e7; padding: 8px 10px; margin-bottom: 8px; position: relative; }
+  .rec .r1 { display: flex; justify-content: space-between; align-items: baseline; }
+  .rec .t { font-size: 11px; font-weight: 900; text-transform: uppercase; }
+  .rec .tm { font-size: 7.5px; color: #71717a; }
+  .rec .r2 { display: flex; gap: 12px; margin-top: 6px; font-size: 8px; }
+  .rec .r2 b { font-weight: 800; }
+  .rec .k { font-size: 6.5px; letter-spacing: .18em; color: #71717a; font-weight: 700; }
+  .badge { font-size: 6.5px; letter-spacing: .15em; font-weight: 700; padding: 2px 4px; border: 1px solid #e4e4e7; color: #71717a; margin-left: 6px; }
+  .badge.c { border-color: #38bdf8; color: #0369a1; }
+  .elink { font-size: 7.5px; letter-spacing: .18em; color: #65a30d; font-weight: 700; }
+  .nav { position: absolute; left: 0; right: 0; bottom: 0; height: 34px; border-top: 1px solid #e4e4e7; background: #fff; display: flex; justify-content: space-around; align-items: center; font-size: 7px; color: #a1a1aa; }
+  .nav .on { color: #65a30d; }
+  .note { font-size: 13px; line-height: 1.7; }
+</style>
+
+<h2>紧凑版按钮放进真实页面</h2>
+<p class="subtitle">前两张是同一个训练页，只差 LOG SET 用紧凑版还是完整版。第三张是计划详情的 START。第四张顺便画了有氧记录怎么改。</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="logger-compact" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#fafafa">
+      <div class="ph mono">
+        <div class="top"><div class="tag">&gt;_ SESSION · 0:23:14</div><div class="h">Push</div><div class="sub">1 / 2 EXERCISES DONE</div></div>
+        <div class="pad">
+          <div class="card2 act">
+            <div class="ch"><div><div class="t">Bench Press</div><div class="m">2 / 4 SETS</div></div><span class="pct">50%</span></div>
+            <div class="tbl">
+              <div class="tr hd"><span>#</span><span>LAST</span><span>NOW</span></div>
+              <div class="tr"><span>1</span><span class="last">60×8</span><span class="now">62.5×8</span></div>
+              <div class="tr"><span>2</span><span class="last">60×8</span><span class="now">62.5×7</span></div>
+              <div class="tr"><span>3</span><span class="last">60×7</span><span>—</span></div>
+            </div>
+            <div class="inp">
+              <div><div class="lab">KG</div><div class="f on">62.5</div></div>
+              <div><div class="lab">REPS</div><div class="f">7</div></div>
+              <div><div class="lab">RPE</div><div class="f">8</div></div>
+            </div>
+            <div style="padding:0 10px 10px"><div class="cc"><div class="shell"></div><div class="txt">LOG SET</div></div></div>
+          </div>
+          <div class="card2"><div class="ch"><div><div class="t">Overhead Press</div><div class="m">0 / 3 SETS</div></div><span class="pct" style="color:#a1a1aa">0%</span></div></div>
+        </div>
+        <div class="nav"><span>⌂</span><span>▤</span><span>▦</span><span>✦</span></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>① 训练页 · 紧凑版 LOG SET</h3><p>一行字，38px 高。浅绿底、绿描边、左边绿条、右下切角都保留。</p></div>
+  </div>
+
+  <div class="card" data-choice="logger-full" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#fafafa">
+      <div class="ph mono">
+        <div class="top"><div class="tag">&gt;_ SESSION · 0:23:14</div><div class="h">Push</div><div class="sub">1 / 2 EXERCISES DONE</div></div>
+        <div class="pad">
+          <div class="card2 act">
+            <div class="ch"><div><div class="t">Bench Press</div><div class="m">2 / 4 SETS</div></div><span class="pct">50%</span></div>
+            <div class="tbl">
+              <div class="tr hd"><span>#</span><span>LAST</span><span>NOW</span></div>
+              <div class="tr"><span>1</span><span class="last">60×8</span><span class="now">62.5×8</span></div>
+              <div class="tr"><span>2</span><span class="last">60×8</span><span class="now">62.5×7</span></div>
+              <div class="tr"><span>3</span><span class="last">60×7</span><span>—</span></div>
+            </div>
+            <div class="inp">
+              <div><div class="lab">KG</div><div class="f on">62.5</div></div>
+              <div><div class="lab">REPS</div><div class="f">7</div></div>
+              <div><div class="lab">RPE</div><div class="f">8</div></div>
+            </div>
+            <div style="padding:0 10px 10px"><div class="fc"><div class="shell"></div><div class="txt"><div><small>SET 3 / 4</small><strong>LOG SET</strong></div><span class="chev">›</span></div></div></div>
+          </div>
+          <div class="card2"><div class="ch"><div><div class="t">Overhead Press</div><div class="m">0 / 3 SETS</div></div><span class="pct" style="color:#a1a1aa">0%</span></div></div>
+        </div>
+        <div class="nav"><span>⌂</span><span>▤</span><span>▦</span><span>✦</span></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>② 对比：完整版 LOG SET</h3><p>两行字、带箭头，52px 高。小标签可以显示"第几组"。</p></div>
+  </div>
+
+  <div class="card" data-choice="start-compact" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#fafafa">
+      <div class="ph mono">
+        <div class="top"><div class="tag">&gt;_ PLAN</div><div class="h">Excel Plan</div><div class="sub">2 TRAINING DAYS · SELECT YOUR FOCUS</div></div>
+        <div class="pad">
+          <div class="card2 act">
+            <div class="ch"><div><div class="t">Push</div><div class="m">2 EXERCISES · LAST: 6D AGO</div></div><div class="cc sm"><div class="shell"></div><div class="txt">START</div></div></div>
+            <ul class="ex"><li><span>Bench Press</span><span>4 × 6-8</span></li><li><span>Overhead Press</span><span>3 × 8</span></li></ul>
+          </div>
+          <div class="card2">
+            <div class="ch"><div><div class="t">Pull</div><div class="m">1 EXERCISE · LAST: 2D AGO</div></div><div class="cc sm"><div class="shell"></div><div class="txt">START</div></div></div>
+            <ul class="ex"><li><span>Deadlift</span><span>3 × 5</span></li></ul>
+          </div>
+        </div>
+        <div class="nav"><span>⌂</span><span class="on">▤ FILES</span><span>▦</span><span>✦</span></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>③ 计划详情 · 紧凑版 START</h3><p>每个训练日卡片右上角一个小块，不撑满整行。绿框的那张是"下一场该练的"。</p></div>
+  </div>
+
+  <div class="card" data-choice="cardio-edit" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#fafafa">
+      <div class="ph mono">
+        <div class="top"><div class="tag">&gt;_ LOGS · OCT 27 · TUE</div><div class="h">History</div></div>
+        <div class="pad">
+          <div class="rec">
+            <div class="r1"><div><span class="t">Push</span><span class="badge">STRENGTH</span></div><span class="tm">18:42</span></div>
+            <div class="r2"><span><span class="k">TIME </span><b>58</b>m</span><span><span class="k">RPE </span><b>7</b></span><span><span class="k">LOAD </span><b>406</b></span></div>
+          </div>
+          <div class="rec">
+            <div class="r1"><div><span class="t">Run</span><span class="badge c">CARDIO</span></div><span class="elink">EDIT</span></div>
+            <div class="r2"><span><span class="k">TIME </span><b>42</b>m</span><span><span class="k">RPE </span><b>5</b></span><span><span class="k">LOAD </span><b>210</b></span></div>
+          </div>
+          <p style="font-size:7.5px;color:#a1a1aa;line-height:1.6;margin-top:10px">点 EDIT → 打开跟录入时同一个面板，内容已经填好，改完点 SAVE。</p>
+        </div>
+        <div class="nav"><span>⌂</span><span>▤</span><span class="on">▦ LOGS</span><span>✦</span></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>④ 有氧记录怎么改</h3><p>每条有氧记录右上角一个小小的 EDIT 文字链接，不占地方。点开就是录入时那个面板，内容已填好。</p></div>
+  </div>
+
+</div>
+
+<p class="note">②只是用来对比。我的建议是 ① + ③：每页唯一的主要动作用完整版，会重复出现或一页有好几个的动作用紧凑版。</p>

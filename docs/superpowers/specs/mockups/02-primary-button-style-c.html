@@ -1,0 +1,85 @@
+<style>
+  .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+  .stage { width: 270px; margin: 0 auto; background: #fff; border: 1px solid #e4e4e7; font-family: Inter, system-ui, sans-serif; color: #09090b; text-align: left; position: relative; }
+  .stage .ctx { padding: 12px 14px; border-bottom: 1px solid #e4e4e7; }
+  .stage .ctx .lab { font-size: 7px; letter-spacing: .2em; color: #71717a; font-weight: 700; margin-bottom: 6px; }
+  .stage .rpe { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .stage .rpe div { height: 26px; border: 1px solid #e4e4e7; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .stage .rpe div.on { background: #84cc16; border-color: #84cc16; color: #1a2e05; }
+  .stage .zone { padding: 14px; }
+  .stage .skip { text-align: center; font-size: 7.5px; color: #a1a1aa; letter-spacing: .15em; margin-top: 8px; }
+  .stage .back { font-size: 7.5px; color: #71717a; letter-spacing: .15em; margin-bottom: 10px; }
+  .zone-label { font-size: 8px; letter-spacing: .2em; color: #a1a1aa; padding: 10px 14px 0; font-weight: 700; }
+
+  /* A: solid (what I drew) */
+  .bA { height: 44px; background: #84cc16; color: #1a2e05; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; letter-spacing: .2em; clip-path: polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+
+  /* B: DEPLOY family, dark */
+  .bB { height: 52px; position: relative; }
+  .bB .shell { position: absolute; inset: 0; border: 2px solid rgba(208,253,62,.75); background: #18181b; clip-path: polygon(0 0,100% 0,100% 70%,94% 100%,0 100%); }
+  .bB .shell::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(to right, transparent, rgba(208,253,62,.5), transparent); }
+  .bB .txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; color: #D0FD3E; }
+  .bB small { display: block; font-size: 6.5px; letter-spacing: .3em; opacity: .7; font-weight: 700; }
+  .bB strong { font-size: 16px; font-weight: 900; letter-spacing: .02em; }
+  .bB .chev { font-size: 20px; opacity: .7; }
+
+  /* C: DEPLOY family, light */
+  .bC { height: 52px; position: relative; }
+  .bC .shell { position: absolute; inset: 0; border: 2px solid #84cc16; background: #f7fee7; clip-path: polygon(0 0,100% 0,100% 70%,94% 100%,0 100%); }
+  .bC .shell::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #84cc16; }
+  .bC .txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 16px 0 18px; color: #09090b; }
+  .bC small { display: block; font-size: 6.5px; letter-spacing: .3em; color: #65a30d; font-weight: 700; }
+  .bC strong { font-size: 16px; font-weight: 900; letter-spacing: .02em; }
+  .bC .chev { font-size: 20px; color: #65a30d; }
+
+  .dep { width: 270px; margin: 0 auto 10px; padding: 10px; background: #000; }
+  .note { font-size: 13px; line-height: 1.7; }
+</style>
+
+<h2>主按钮应该长什么样？</h2>
+<p class="subtitle">放在结束页底部看效果。同一个样式也会用在训练页的 FINISH、有氧的 SAVE 等所有"主要动作"按钮上。</p>
+
+<div class="section" style="text-align:center">
+  <div class="label" style="margin-bottom:6px">参照：封面上的 DEPLOY</div>
+  <div class="dep mono"><div class="bB"><div class="shell"></div><div class="txt"><div style="text-align:left"><small>OPERATION</small><strong>DEPLOY</strong></div><span class="chev">›</span></div></div></div>
+</div>
+
+<div class="cards">
+
+  <div class="card" data-choice="solid" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#fafafa">
+      <div class="stage mono">
+        <div class="ctx"><div class="lab">SESSION RPE</div><div class="rpe"><div>5</div><div>6</div><div class="on">7</div><div>8</div><div>9</div></div></div>
+        <div class="zone"><div class="back">← BACK TO SESSION</div><div class="bA">SAVE LOG</div><div class="skip">SKIP RATING</div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>A · 现在这版</h3><p>整块绿底配黑字。醒目，但跟 DEPLOY 不像一家人。</p></div>
+  </div>
+
+  <div class="card" data-choice="dark" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#fafafa">
+      <div class="stage mono">
+        <div class="ctx"><div class="lab">SESSION RPE</div><div class="rpe"><div>5</div><div>6</div><div class="on">7</div><div>8</div><div>9</div></div></div>
+        <div class="zone"><div class="back">← BACK TO SESSION</div>
+          <div class="bB"><div class="shell"></div><div class="txt"><div><small>SESSION · PUSH</small><strong>SAVE LOG</strong></div><span class="chev">›</span></div></div>
+          <div class="skip">SKIP RATING</div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>B · 照搬 DEPLOY</h3><p>深色底、荧光绿描边和字、小标签、箭头、右下切角。跟封面一模一样，但放在白色内页上会是一块很重的黑色。</p></div>
+  </div>
+
+  <div class="card" data-choice="light" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#fafafa">
+      <div class="stage mono">
+        <div class="ctx"><div class="lab">SESSION RPE</div><div class="rpe"><div>5</div><div>6</div><div class="on">7</div><div>8</div><div>9</div></div></div>
+        <div class="zone"><div class="back">← BACK TO SESSION</div>
+          <div class="bC"><div class="shell"></div><div class="txt"><div><small>SESSION · PUSH</small><strong>SAVE LOG</strong></div><span class="chev">›</span></div></div>
+          <div class="skip">SKIP RATING</div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>C · DEPLOY 的白底版</h3><p>保留 DEPLOY 的骨架（小标签、箭头、右下切角），换成浅绿底、绿描边、黑字，左边一道绿条。跟白色内页更融合。</p></div>
+  </div>
+
+</div>
+
+<p class="note">封面的 DEPLOY 本身不改。B 和 C 的区别只在内页按钮用深色还是浅色。</p>

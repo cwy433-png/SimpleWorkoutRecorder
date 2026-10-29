@@ -1,0 +1,155 @@
+<style>
+  .ph { width: 270px; height: 560px; margin: 0 auto; background: #fff; border: 1px solid #e4e4e7; position: relative; overflow: hidden; font-family: Inter, system-ui, sans-serif; color: #09090b; text-align: left; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+  .ph .top { padding: 12px 14px 10px; border-bottom: 1px solid #e4e4e7; }
+  .ph .tag { font-size: 8px; letter-spacing: .18em; color: #65a30d; font-weight: 700; }
+  .ph .h { font-size: 20px; font-weight: 900; letter-spacing: .02em; margin-top: 2px; text-transform: uppercase; }
+  .ph .sub { font-size: 8px; color: #71717a; letter-spacing: .12em; margin-top: 2px; }
+  .ph .sec { padding: 12px 14px 0; }
+  .ph .lab { font-size: 7px; letter-spacing: .2em; color: #71717a; font-weight: 700; margin-bottom: 6px; }
+  .ph .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .ph .st { background: #f4f4f5; border: 1px solid #e4e4e7; padding: 6px; position: relative; }
+  .ph .st::before { content: ''; position: absolute; top: -1px; left: -1px; width: 5px; height: 5px; border-top: 1.5px solid #84cc16; border-left: 1.5px solid #84cc16; }
+  .ph .st .k { font-size: 6.5px; letter-spacing: .15em; color: #71717a; font-weight: 700; }
+  .ph .st .v { font-size: 14px; font-weight: 800; margin-top: 2px; }
+  .ph .st .v small { font-size: 8px; color: #71717a; font-weight: 500; }
+  .ph .edit { font-size: 7px; color: #65a30d; border-bottom: 1px dashed #84cc16; }
+  .ph .rpe { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .ph .rpe div { height: 30px; border: 1px solid #e4e4e7; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; background: #fff; }
+  .ph .rpe div.on { background: #84cc16; border-color: #84cc16; color: #1a2e05; }
+  .ph .anch { display: flex; justify-content: space-between; font-size: 6.5px; color: #a1a1aa; margin-top: 4px; letter-spacing: .08em; }
+  .ph .load { margin-top: 10px; border: 1px dashed #d4d4d8; padding: 7px 8px; display: flex; justify-content: space-between; align-items: baseline; }
+  .ph .load .k { font-size: 7px; letter-spacing: .18em; color: #71717a; font-weight: 700; }
+  .ph .load .v { font-size: 15px; font-weight: 800; }
+  .ph .load .f { font-size: 7.5px; color: #71717a; }
+  .ph .btn { margin: 0 14px; height: 40px; background: #84cc16; color: #1a2e05; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; letter-spacing: .2em; clip-path: polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+  .ph .ghost { text-align: center; font-size: 7.5px; color: #a1a1aa; letter-spacing: .15em; margin-top: 8px; }
+  .ph .foot { position: absolute; left: 0; right: 0; bottom: 14px; }
+  .ph .chips { display: flex; gap: 4px; flex-wrap: wrap; }
+  .ph .chip { font-size: 8px; font-weight: 700; letter-spacing: .12em; padding: 6px 8px; border: 1px solid #e4e4e7; }
+  .ph .chip.on { border-color: #84cc16; background: #f7fee7; color: #3f6212; }
+  .ph .field { border: 1px solid #e4e4e7; height: 32px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; font-size: 12px; font-weight: 700; }
+  .ph .field small { font-size: 7px; color: #a1a1aa; letter-spacing: .15em; font-weight: 700; }
+  .ph .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .ph .sheet { position: absolute; left: 0; right: 0; bottom: 0; top: 70px; background: #fff; border-top: 2px solid #84cc16; }
+  .ph .dim { position: absolute; inset: 0; background: rgba(9,9,11,.35); }
+  .ph .grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(0,0,0,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.035) 1px, transparent 1px); background-size: 30px 30px; }
+  .ph .lbl { font-size: 8px; letter-spacing: .15em; color: #D0FD3E; text-shadow: 1px 1px 0 rgba(0,0,0,.25); }
+  .ph .brand { font-size: 18px; font-weight: 900; letter-spacing: -.04em; margin-top: 2px; }
+  .ph .brand span { color: rgba(208,253,62,.5); }
+  .ph .ctile { background: #f4f4f5; border: 1px solid #e4e4e7; padding: 6px; }
+  .ph .ctile .k { font-size: 6.5px; color: #71717a; text-transform: uppercase; letter-spacing: .03em; }
+  .ph .ctile .v { font-size: 13px; color: #D0FD3E; text-shadow: 1px 1px 0 rgba(0,0,0,.25); margin-top: 1px; }
+  .ph .ctile .s { font-size: 6.5px; color: #a1a1aa; margin-top: 2px; }
+  .ph .deck { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 12px 48px; background: linear-gradient(to top, #000 0%, rgba(0,0,0,.4) 60%, transparent 100%); }
+  .ph .deploy { height: 50px; border: 2px solid rgba(208,253,62,.7); background: rgba(40,40,40,.85); clip-path: polygon(0 0,100% 0,100% 70%,95% 100%,0 100%); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; color: #D0FD3E; }
+  .ph .deploy small { display: block; font-size: 6.5px; letter-spacing: .3em; opacity: .7; font-weight: 700; }
+  .ph .deploy strong { font-size: 16px; font-weight: 900; }
+  .ph .bar { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 6.5px; color: #a1a1aa; }
+  .ph .bar .track { flex: 1; height: 3px; background: #e4e4e7; }
+  .ph .bar .fill { height: 100%; background: #D0FD3E; }
+  .ph .bar .r { color: #D0FD3E; }
+  .ph .nav { position: absolute; left: 0; right: 0; bottom: 0; height: 36px; display: flex; justify-content: space-around; align-items: center; font-size: 7px; color: #52525b; }
+  .note { font-size: 13px; line-height: 1.7; }
+  .note li { margin-bottom: 4px; }
+</style>
+
+<h2>训练量：三个新画面</h2>
+<p class="subtitle">风格按封面的语言延伸到内页：方角、等宽小标签、科技角标、切角主按钮。点选你觉得对的，有意见直接在对话里说。</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="debrief" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#fafafa">
+      <div class="ph">
+        <div class="top"><div class="tag mono">&gt;_ SESSION COMPLETE</div><div class="h">Push</div><div class="sub mono">EXCEL PLAN · OCT 28 · 18:42</div></div>
+        <div class="sec">
+          <div class="lab mono">SUMMARY</div>
+          <div class="stats">
+            <div class="st"><div class="k mono">TIME</div><div class="v mono">58<small> min</small></div><span class="edit mono">EDIT</span></div>
+            <div class="st"><div class="k mono">SETS</div><div class="v mono">14<small>/16</small></div></div>
+            <div class="st"><div class="k mono">VOLUME</div><div class="v mono">6.2<small> t</small></div></div>
+          </div>
+        </div>
+        <div class="sec" style="padding-top:16px">
+          <div class="lab mono">SESSION RPE · 整场有多吃力</div>
+          <div class="rpe mono"><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div class="on">7</div><div>8</div><div>9</div><div>10</div></div>
+          <div class="anch mono"><span>1 很轻松</span><span>5 吃力</span><span>10 极限</span></div>
+          <div class="load mono"><span class="k">LOAD</span><span class="f">7 × 58 min =</span><span class="v">406</span></div>
+        </div>
+        <div class="foot"><div class="btn mono">SAVE LOG</div><div class="ghost mono">SKIP RATING · 稍后在历史里补</div></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>① 结束页</h3>
+      <p>点"完成训练"后进入。时长自动带出，忘了按结束可以改。点一个数字就算打完分，下面实时算出负荷。不想打可以跳过。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="cardio" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#fafafa">
+      <div class="ph">
+        <div class="top"><div class="tag mono">&gt;_ LOGS</div><div class="h">History</div></div>
+        <div class="dim"></div>
+        <div class="sheet">
+          <div class="sec" style="padding-top:12px">
+            <div class="tag mono">&gt;_ LOG CARDIO</div>
+            <div class="h" style="font-size:16px;margin-bottom:10px">有氧记录</div>
+            <div class="lab mono">TYPE</div>
+            <div class="chips mono"><span class="chip on">RUN</span><span class="chip">BIKE</span><span class="chip">SWIM</span><span class="chip">ROW</span><span class="chip">OTHER</span></div>
+          </div>
+          <div class="sec">
+            <div class="row2">
+              <div><div class="lab mono">DATE</div><div class="field mono">OCT 27<small>18:30</small></div></div>
+              <div><div class="lab mono">MINUTES</div><div class="field mono">42<small>MIN</small></div></div>
+            </div>
+          </div>
+          <div class="sec">
+            <div class="lab mono">SESSION RPE</div>
+            <div class="rpe mono"><div>1</div><div>2</div><div>3</div><div>4</div><div class="on">5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div></div>
+            <div class="load mono"><span class="k">LOAD</span><span class="f">5 × 42 min =</span><span class="v">210</span></div>
+          </div>
+          <div class="foot"><div class="btn mono">SAVE</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>② 有氧快速记录</h3>
+      <p>从历史页的"+ CARDIO"打开。四样：类型、时间、分钟数、RPE。时间默认现在，补记前几天的改一下就行。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="cover" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#fafafa">
+      <div class="ph mono"><div class="grid"></div>
+        <div class="top" style="position:relative;border-bottom:1px solid #e4e4e7"><div class="lbl">&gt;_ WEEK 44 · OCT 28</div><div class="brand">RHODES<span>_NET</span></div></div>
+        <div style="position:relative;padding:16px 14px 0">
+          <div style="border-left:2px solid rgba(208,253,62,.6);padding:4px 0 4px 10px;font-size:9.5px;line-height:1.6;font-style:italic">"Everybody wants to be a bodybuilder, but nobody wants to lift no heavy-ass weights."<b style="display:block;text-align:right;font-weight:400;font-style:normal;font-size:7.5px;color:#D0FD3E;margin-top:4px">— Ronnie Coleman</b></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px">
+            <div class="ctile"><div class="k">This Week</div><div class="v">3 SESSIONS</div><div class="s">2 STRENGTH · 1 CARDIO</div></div>
+            <div class="ctile"><div class="k">Week Load</div><div class="v">1,026</div><div class="s">LAST WEEK 1,310</div></div>
+          </div>
+        </div>
+        <div class="deck">
+          <div class="deploy"><div><small>OPERATION</small><strong>DEPLOY</strong></div><span>›</span></div>
+          <div class="bar"><span>STRENGTH</span><div class="track"><div class="fill" style="width:66%"></div></div><span class="r">2/3</span></div>
+        </div>
+        <div class="nav"><span style="color:#84cc16">⌂ OPS</span><span>▤</span><span>▦</span><span>✦</span></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>③ 封面 A（加上负荷后）</h3>
+      <p>左格：本周练了几次，力量和有氧分开写。右格：本周总负荷，附上周作对比。进度条：本周力量完成了默认计划的几天。右上角 MODE_SELECT 已删掉。</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="section note">
+  <h3>看不见、但要做的部分</h3>
+  <ul>
+    <li><b>修时长：</b>每场训练记下开始和结束时间。以前的记录时长是 0，就当作"未知"，不计入负荷。</li>
+    <li><b>历史页：</b>每一场显示 RPE 和负荷，没打分的可以点进去补。日历上有氧和力量用不同标记区分。</li>
+    <li><b>导出给 AI：</b>导出文件里每场都带完整的开始、结束时间（含时区），以及时长、RPE、负荷、类型，方便 AI 按时间跟佳明的记录对上。</li>
+  </ul>
+</div>
