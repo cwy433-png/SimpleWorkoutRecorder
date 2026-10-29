@@ -164,7 +164,7 @@ export const HomeView_Rhodes = ({ onStart, onOpenLogs, summary, now, view, quote
                                             }`}
                                     >
                                         <div className="flex flex-col items-start">
-                                            <span className={`font-bold uppercase ${isEnabled ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]'}`}>
+                                            <span className={`font-bold uppercase ${isEnabled ? 'text-primary-text' : 'text-[var(--color-text-main)]'}`}>
                                                 {pack.name}
                                             </span>
                                             <span className="text-[10px] text-[var(--color-text-muted)]">
