@@ -63,6 +63,22 @@ describe('buildAiExport', () => {
     expect(s).toMatchObject({ durationMin: 58, sessionRpe: 7, load: 406, start: '2026-10-27T18:00:00+08:00' });
   });
 
+  it('coerces string set values from the logger and nulls blanks', () => {
+    const rec = {
+      ...modernStrength,
+      id: 77,
+      logs: [{ exerciseName: 'Squat', sets: [
+        { weight: '62.5', reps: '8', rpe: '8', restTime: 120 },
+        { weight: '', reps: '', rpe: '' },
+        { weight: '  ', reps: null, rpe: undefined, restTime: 'abc' },
+      ] }],
+    };
+    const sets = buildAiExport([rec], [], now).sessions[0].exercises[0].sets;
+    expect(sets[0]).toEqual({ weightKg: 62.5, reps: 8, rpe: 8, restSec: 120 });
+    expect(sets[1]).toEqual({ weightKg: null, reps: null, rpe: null, restSec: null });
+    expect(sets[2]).toEqual({ weightKg: null, reps: null, rpe: null, restSec: null });
+  });
+
   it('does not put exercises on cardio sessions', () => {
     expect(out.sessions.find((s) => s.type === 'cardio')).not.toHaveProperty('exercises');
   });

@@ -28,12 +28,19 @@ export function localDateStamp(ts) {
 
 const numberOrNull = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
+// The logger stores set values as strings ('8', '62.5'); blanks and non-numbers become null.
+function toNum(v) {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  if (typeof v === 'string' && v.trim() !== '') return numberOrNull(Number(v));
+  return null;
+}
+
 function exportSets(sets) {
   return (Array.isArray(sets) ? sets : []).map((s) => ({
-    weightKg: numberOrNull(Number(s?.weight)),
-    reps: numberOrNull(Number(s?.reps)),
-    rpe: numberOrNull(s?.rpe),
-    restSec: numberOrNull(s?.restTime),
+    weightKg: toNum(s?.weight),
+    reps: toNum(s?.reps),
+    rpe: toNum(s?.rpe),
+    restSec: toNum(s?.restTime),
   }));
 }
 
