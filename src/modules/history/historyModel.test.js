@@ -13,6 +13,8 @@ import {
   sessionSummary,
   buildStrengthRecord,
   withRating,
+  buildCardioRecord,
+  CARDIO_ACTIVITIES,
 } from './historyModel';
 import { legacyRecord, modernStrength, cardio } from './__fixtures__/legacyHistory';
 
@@ -256,5 +258,31 @@ describe('withRating', () => {
       sessionRpe: 9,
       duration: 40,
     });
+  });
+});
+
+describe('buildCardioRecord', () => {
+  const end = Date.parse('2026-10-27T19:30:00+08:00');
+  it('builds a cardio record with start derived from the end', () => {
+    expect(buildCardioRecord({ activity: 'run', endTime: end, durationMin: 42, sessionRpe: 5, now: 9 })).toEqual({
+      id: 9,
+      type: 'cardio',
+      activity: 'run',
+      startTime: end - 42 * 60000,
+      date: end - 42 * 60000,
+      endTime: end,
+      duration: 42,
+      sessionRpe: 5,
+    });
+  });
+  it('keeps a given id (editing)', () => {
+    expect(buildCardioRecord({ activity: 'run', endTime: end, durationMin: 42, sessionRpe: 5, id: 3, now: 9 }).id).toBe(3);
+  });
+  it('yields a load of rpe x minutes', () => {
+    const r = buildCardioRecord({ activity: 'bike', endTime: end, durationMin: 45, sessionRpe: 5, now: 9 });
+    expect(recordLoad(r)).toBe(225);
+  });
+  it('lists the five activities', () => {
+    expect(CARDIO_ACTIVITIES).toEqual(['run', 'bike', 'swim', 'row', 'other']);
   });
 });

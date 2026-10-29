@@ -4,9 +4,12 @@ import { Card } from '../../components/ui/Card';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useDialog } from '../../components/ui/Dialog';
 import { OneRepMax } from './OneRepMax';
-import { normalizeRecord, sessionTime } from './historyModel';
+import { CardioSheet } from './CardioSheet';
+import { RatingSheet } from './RatingSheet';
+import { durationMinutes, recordLoad, sessionTime } from './historyModel';
+import { HistoryCorruptError, appendRecord, readHistory, replaceRecord } from './historyStore';
 import { formatDayLabel, formatClock } from '../../lib/format';
-import { ChevronLeft, ChevronRight, Download, Upload, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Plus, Upload, X } from 'lucide-react';
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -28,15 +31,8 @@ const editInput =
 
 export const HistoryManager = () => {
     const dialog = useDialog();
-    // Load history from localStorage (legacy records are normalized in memory only)
-    const [history, setHistory] = useState(() => {
-        try {
-            const parsed = JSON.parse(localStorage.getItem('workout_history') || '[]');
-            return Array.isArray(parsed) ? parsed.map(normalizeRecord) : [];
-        } catch {
-            return [];
-        }
-    });
+    // Load history from localStorage (tolerant read; legacy records are normalized)
+    const [history, setHistory] = useState(() => readHistory(localStorage));
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewMode, setViewMode] = useState('CALENDAR'); // CALENDAR | TOOLS
 
@@ -44,6 +40,10 @@ export const HistoryManager = () => {
 
     // EDITING STATE
     const [editingWorkout, setEditingWorkout] = useState(null); // The full workout object being edited
+
+    // CARDIO SHEET (create / edit) and RATING SHEET state
+    const [cardioSheet, setCardioSheet] = useState({ open: false, initial: null });
+    const [ratingRecord, setRatingRecord] = useState(null);
 
     // Records grouped by the local day they belong to
     const byDay = useMemo(() => {
@@ -73,13 +73,40 @@ export const HistoryManager = () => {
         setCurrentDate(new Date(year, month + delta, 1));
     };
 
+    // Run a write through the history store, then reload the list. Returns true on success.
+    // Unreadable stored history is never overwritten; the caller keeps its editor open.
+    const persist = (write) => {
+        try {
+            write();
+        } catch (err) {
+            dialog.notify(
+                err instanceof HistoryCorruptError
+                    ? 'Stored history is unreadable, so nothing was saved.'
+                    : 'Could not save: ' + (err?.message || 'unknown error'),
+                { tone: 'danger' }
+            );
+            return false;
+        }
+        setHistory(readHistory(localStorage));
+        return true;
+    };
+
     const handleSaveEdit = () => {
         if (!editingWorkout) return;
+        if (persist(() => replaceRecord(editingWorkout, localStorage))) setEditingWorkout(null);
+    };
 
-        const newHistory = history.map(h => h.id === editingWorkout.id ? editingWorkout : h);
-        setHistory(newHistory);
-        localStorage.setItem('workout_history', JSON.stringify(newHistory));
-        setEditingWorkout(null);
+    const handleSaveCardio = (record) => {
+        const editing = cardioSheet.initial !== null;
+        const write = () => (editing ? replaceRecord(record, localStorage) : appendRecord(record, localStorage));
+        if (!persist(write)) return;
+        setCardioSheet({ open: false, initial: null });
+        setSelectedDate(new Date(record.date));
+        setCurrentDate(new Date(record.date));
+    };
+
+    const handleSaveRating = (record) => {
+        if (persist(() => replaceRecord(record, localStorage))) setRatingRecord(null);
     };
 
     const startEditing = (workout) => {
@@ -145,7 +172,19 @@ export const HistoryManager = () => {
 
     return (
         <div className="flex flex-col h-full overflow-y-auto w-full pb-safe">
-            <PageHeader tag="LOGS" title="History" />
+            <PageHeader
+                tag="LOGS"
+                title="History"
+                right={
+                    <button
+                        type="button"
+                        onClick={() => setCardioSheet({ open: true, initial: null })}
+                        className="inline-flex h-8 items-center gap-1 border border-primary bg-primary-soft px-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-primary-ink cursor-pointer transition-colors hover:bg-primary/20"
+                    >
+                        <Plus size={12} strokeWidth={3} /> CARDIO
+                    </button>
+                }
+            />
 
             {/* View Switcher Tabs */}
             <div className="flex gap-1.5 px-4 pt-3 mb-4">
@@ -222,7 +261,9 @@ export const HistoryManager = () => {
                                 const cellDate = new Date(year, month, day);
                                 const isSelected = dayKey(selectedDate) === dayKey(cellDate);
                                 const isToday = dayKey(today) === dayKey(cellDate);
-                                const hasWorkout = byDay.has(dayKey(cellDate));
+                                const dayRecords = byDay.get(dayKey(cellDate)) || [];
+                                const hasStrength = dayRecords.some(r => r.type !== 'cardio');
+                                const hasCardio = dayRecords.some(r => r.type === 'cardio');
 
                                 return (
                                     <button
@@ -237,7 +278,8 @@ export const HistoryManager = () => {
                                     >
                                         {day}
                                         <span className="mt-0.5 flex h-1 gap-0.5">
-                                            {hasWorkout && <i className="block h-1 w-1 bg-primary" />}
+                                            {hasStrength && <i className="block h-1 w-1 bg-primary" />}
+                                            {hasCardio && <i className="block h-1 w-1 rounded-full bg-cardio" />}
                                         </span>
                                         {isToday && (
                                             <span aria-hidden className="absolute top-1 right-2 h-[3px] w-[3px] bg-primary-text" />
@@ -246,6 +288,12 @@ export const HistoryManager = () => {
                                 );
                             })}
                         </div>
+                    </div>
+
+                    {/* Marker legend */}
+                    <div className="flex justify-center gap-4 pb-3 font-mono text-[10px] uppercase tracking-[0.12em] text-text-muted">
+                        <span className="inline-flex items-center gap-1.5"><i className="block h-1.5 w-1.5 bg-primary" />STRENGTH</span>
+                        <span className="inline-flex items-center gap-1.5"><i className="block h-1.5 w-1.5 rounded-full bg-cardio" />CARDIO</span>
                     </div>
 
                     {/* SELECTED DAY DETAILS */}
@@ -257,15 +305,29 @@ export const HistoryManager = () => {
                         {selectedDayWorkouts.length > 0 ? (
                             <div className="flex flex-col gap-3">
                                 {selectedDayWorkouts.map(workout => {
-                                    const isEditing = editingWorkout?.id === workout.id;
-                                    const logs = isEditing ? editingWorkout.logs : workout.logs;
+                                    const isCardio = workout.type === 'cardio';
+                                    const isEditing = !isCardio && editingWorkout?.id === workout.id;
+                                    const logs = isCardio ? [] : (isEditing ? editingWorkout.logs : workout.logs);
+                                    const minutes = durationMinutes(workout);
+                                    const load = recordLoad(workout);
+                                    const hasRpe = typeof workout.sessionRpe === 'number';
+                                    const needsRating = !isCardio && (!hasRpe || minutes === null);
 
                                     return (
                                         <Card key={workout.id} active={isEditing}>
                                             <div className="flex justify-between items-start mb-2">
                                                 <div className="min-w-0">
-                                                    <h3 className="font-black uppercase text-lg leading-tight text-text-main">{workout.planTitle}</h3>
-                                                    <p className="font-mono text-xs font-bold uppercase tracking-[0.1em] text-primary-text">{workout.dayName}</p>
+                                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                                        <h3 className="font-black uppercase text-lg leading-tight text-text-main">
+                                                            {isCardio ? (workout.activity || 'Cardio') : workout.planTitle}
+                                                        </h3>
+                                                        <span className={`border px-1 py-px font-mono text-[9px] font-bold uppercase tracking-[0.15em] ${isCardio ? 'border-cardio text-cardio-text' : 'border-border text-text-muted'}`}>
+                                                            {isCardio ? 'CARDIO' : 'STRENGTH'}
+                                                        </span>
+                                                    </div>
+                                                    {!isCardio && (
+                                                        <p className="font-mono text-xs font-bold uppercase tracking-[0.1em] text-primary-text">{workout.dayName}</p>
+                                                    )}
                                                 </div>
 
                                                 <div className="flex gap-3 items-center flex-shrink-0">
@@ -275,7 +337,16 @@ export const HistoryManager = () => {
                                                         </span>
                                                     )}
 
-                                                    {isEditing ? (
+                                                    {isCardio ? (
+                                                        <Button
+                                                            variant="link"
+                                                            size="sm"
+                                                            className="!text-primary-text"
+                                                            onClick={() => setCardioSheet({ open: true, initial: workout })}
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                    ) : isEditing ? (
                                                         <>
                                                             <Button variant="link" tone="danger" size="sm" onClick={() => setEditingWorkout(null)}>Cancel</Button>
                                                             <Button variant="link" size="sm" className="!text-primary-text" onClick={handleSaveEdit}>Save</Button>
@@ -286,6 +357,25 @@ export const HistoryManager = () => {
                                                 </div>
                                             </div>
 
+                                            {/* TIME / RPE / LOAD (unknown values show a dash) */}
+                                            <div className="flex items-center gap-4 font-mono text-xs">
+                                                <span><span className="text-[10px] font-bold tracking-[0.18em] text-text-muted">TIME </span><b className="font-extrabold">{minutes ?? '—'}</b>{minutes !== null && 'm'}</span>
+                                                <span><span className="text-[10px] font-bold tracking-[0.18em] text-text-muted">RPE </span><b className="font-extrabold">{hasRpe ? workout.sessionRpe : '—'}</b></span>
+                                                <span><span className="text-[10px] font-bold tracking-[0.18em] text-text-muted">LOAD </span><b className="font-extrabold">{load ?? '—'}</b></span>
+                                                {!isCardio && !isEditing && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setRatingRecord(workout)}
+                                                        className={`ml-auto min-h-[28px] px-2 font-mono text-[10px] font-bold uppercase tracking-[0.15em] cursor-pointer transition-colors ${needsRating
+                                                            ? 'border border-dashed border-primary bg-primary-soft text-primary-ink hover:bg-primary/20'
+                                                            : 'text-text-muted hover:text-text-main'}`}
+                                                    >
+                                                        {needsRating ? 'RATE' : 'Re-rate'}
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {!isCardio && (
                                             <div className="space-y-2 mt-3 pt-3 border-t border-border">
                                                 {logs.map((log, exIdx) => (
                                                     <div key={exIdx} className="flex flex-col gap-1 text-xs mb-2">
@@ -369,6 +459,7 @@ export const HistoryManager = () => {
                                                     </div>
                                                 ))}
                                             </div>
+                                            )}
                                         </Card>
                                     );
                                 })}
@@ -399,6 +490,19 @@ export const HistoryManager = () => {
                     </div>
                 </>
             )}
+
+            <CardioSheet
+                open={cardioSheet.open}
+                initial={cardioSheet.initial}
+                onSave={handleSaveCardio}
+                onClose={() => setCardioSheet({ open: false, initial: null })}
+            />
+            <RatingSheet
+                open={ratingRecord !== null}
+                record={ratingRecord}
+                onSave={handleSaveRating}
+                onClose={() => setRatingRecord(null)}
+            />
         </div>
     );
 };

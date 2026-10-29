@@ -15,6 +15,9 @@ export const colors = {
     'text-muted': '#71717a',
     border: '#e4e4e7',
     alert: '#FF453A',
+    // Cardio marker (calendar dot, badge). Strength uses primary.
+    cardio: '#38bdf8',
+    'cardio-text': '#0369a1',
     // Cover-only accent. Do not use on inner pages.
     neon: '#D0FD3E',
 };

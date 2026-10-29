@@ -165,3 +165,23 @@ export function withRating(record, { sessionRpe, durationMin }) {
   const endTime = sessionTime(record);
   return { ...record, sessionRpe, duration: durationMin, endTime, startTime: endTime - span };
 }
+
+export const CARDIO_ACTIVITIES = ['run', 'bike', 'swim', 'row', 'other'];
+
+/**
+ * Build a cardio record from when it ended. The start is derived (end - duration) and the
+ * record belongs to the day it started (date = startTime). Pass `id` to keep an existing id when editing.
+ */
+export function buildCardioRecord({ activity, endTime, durationMin, sessionRpe, id, now }) {
+  const startTime = endTime - durationMin * 60000;
+  return {
+    id: id ?? now,
+    type: 'cardio',
+    activity,
+    startTime,
+    date: startTime,
+    endTime,
+    duration: durationMin,
+    sessionRpe,
+  };
+}
