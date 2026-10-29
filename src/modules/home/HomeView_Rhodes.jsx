@@ -75,7 +75,7 @@ export const HomeView_Rhodes = ({ onStart, onOpenLogs, summary, now, view, quote
                     <div className="grid grid-cols-2 gap-4 mt-8 max-w-xs">
                         <button type="button" onClick={onOpenLogs} className="bg-[var(--color-surface)] p-2 border border-[var(--color-border)] text-left">
                             <div className="text-[10px] text-[var(--color-text-muted)] uppercase">This Week</div>
-                            <div className="text-neon font-mono" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>{sessions} SESSIONS</div>
+                            <div className="text-neon font-mono" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>{sessions} {sessions === 1 ? 'SESSION' : 'SESSIONS'}</div>
                             <div className="text-[10px] text-[var(--color-text-muted)] font-mono uppercase">{strength} STRENGTH · {cardio} CARDIO</div>
                         </button>
                         <button type="button" onClick={onOpenLogs} className="bg-[var(--color-surface)] p-2 border border-[var(--color-border)] text-left">
