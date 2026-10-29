@@ -238,6 +238,7 @@ function App() {
     && (view !== 'WORKOUT_DASHBOARD' || workoutScrolledToBottom);
   const sessionIsCrossDay = session.isCrossDay();
   const showSessionBar = session.state.isActive && view !== 'WORKOUT_DASHBOARD';
+  const onCover = view === 'HOME'; // the cover is dark: the session bar uses its neon-on-black look there
 
   // Publish the live bottom-stack heights (see src/lib/bottomStack.js).
   const navRef = useRef(null);
@@ -262,14 +263,16 @@ function App() {
         <div
           ref={sessionBarRef}
           style={{ bottom: 'var(--nav-h, 0px)' }}
-          className={`fixed left-0 right-0 z-40 border-t border-border transition-[bottom] duration-300 ${sessionIsCrossDay ? 'bg-amber-50' : 'bg-primary-soft'}`}
+          className={`fixed left-0 right-0 z-40 border-t transition-[bottom] duration-300 ${onCover
+            ? `bg-black/80 ${sessionIsCrossDay ? 'border-amber-400/40' : 'border-neon/30'}`
+            : `border-border ${sessionIsCrossDay ? 'bg-amber-50' : 'bg-primary-soft'}`}`}
         >
           <div className="relative mx-auto flex h-10 w-full max-w-md items-stretch">
-            <span aria-hidden className={`absolute bottom-0 left-0 top-0 w-1 ${sessionIsCrossDay ? 'bg-amber-500' : 'bg-primary'}`} />
+            <span aria-hidden className={`absolute bottom-0 left-0 top-0 w-1 ${sessionIsCrossDay ? (onCover ? 'bg-amber-400' : 'bg-amber-500') : (onCover ? 'bg-neon' : 'bg-primary')}`} />
             <button
               type="button"
               onClick={handleResumeSession}
-              className={`min-w-0 flex-1 truncate pl-4 pr-2 text-left font-mono text-[11px] font-bold uppercase tracking-[0.15em] ${sessionIsCrossDay ? 'text-amber-700' : 'text-primary-text'}`}
+              className={`min-w-0 flex-1 truncate pl-4 pr-2 text-left font-mono text-[11px] font-bold uppercase tracking-[0.15em] ${sessionIsCrossDay ? (onCover ? 'text-amber-400' : 'text-amber-700') : (onCover ? 'text-neon' : 'text-primary-text')}`}
             >
               {sessionIsCrossDay ? 'STALE SESSION' : '>_ SESSION ACTIVE'}
               {' · '}
@@ -279,7 +282,7 @@ function App() {
               type="button"
               onClick={handleDiscardSession}
               aria-label="Discard workout"
-              className="flex w-11 flex-shrink-0 items-center justify-center text-text-muted hover:text-text-main"
+              className={`flex w-11 flex-shrink-0 items-center justify-center ${onCover ? 'text-neon/70 hover:text-neon' : 'text-text-muted hover:text-text-main'}`}
             >
               <X size={16} strokeWidth={2.5} />
             </button>
