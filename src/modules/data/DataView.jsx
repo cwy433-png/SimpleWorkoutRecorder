@@ -52,8 +52,8 @@ export const DataView = () => {
     const now = Date.now();
     const backup = createBackup(localStorage, now);
     downloadJson(backup, `workout-recorder-backup-${localDateStamp(now)}.json`);
-    if ('workout_history_raw' in backup) {
-      dialog.notify('HISTORY UNREADABLE — RAW COPY SAVED', { tone: 'danger' });
+    if ('workout_history_raw' in backup || 'workout_history_unreadable' in backup) {
+      dialog.notify('INCLUDES UNREADABLE OLD HISTORY (RAW COPY)', { tone: 'danger' });
     }
   };
 

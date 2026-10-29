@@ -144,6 +144,16 @@ describe('backup and restore', () => {
     expect(mem.getItem('workout_history_raw')).toBeNull();
   });
 
+  it('includes set-aside unreadable copies, and restore never writes them back', () => {
+    const copies = [{ setAsideAt: 1, raw: 'not json' }];
+    const backup = createBackup(fakeStorage({ workout_history: '[]', workout_history_unreadable: JSON.stringify(copies) }), 0);
+    expect(backup.workout_history).toEqual([]);
+    expect(backup.workout_history_unreadable).toEqual(copies);
+    const mem = fakeStorage();
+    restoreBackup(backup, mem);
+    expect(mem.getItem('workout_history_unreadable')).toBeNull();
+  });
+
   it('restores only the allowed keys and ignores theme keys', () => {
     const mem = fakeStorage();
     expect(restoreBackup({ workout_history: [], app_style: { id: 'cyber' }, app_theme: { type: 'dark' } }, mem)).toEqual(['workout_history']);

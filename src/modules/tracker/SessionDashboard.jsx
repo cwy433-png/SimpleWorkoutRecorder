@@ -528,7 +528,7 @@ export const SessionDashboard = ({ onBack, onBottomReachChange }) => {
             >
                 <Button
                     variant="primary"
-                    label={`SESSION · ${String(activeDay.name || '').toUpperCase()}${completedCount === totalExercises ? '' : ' · INCOMPLETE'}`}
+                    label={`SESSION · ${String(activeDay.name || '').toUpperCase()}`}
                     onClick={() => beginDebrief()}
                 >
                     {completedCount === totalExercises ? 'FINISH WORKOUT' : 'FINISH NOW'}

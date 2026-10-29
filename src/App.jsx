@@ -12,7 +12,7 @@ import { HistoryManager } from './modules/history/HistoryManager';
 import { DataView } from './modules/data/DataView';
 import { HomeView_Rhodes } from './modules/home/HomeView_Rhodes';
 import { normalizeRecord, weekSummary } from './modules/history/historyModel';
-import { saveStrengthRecord, readHistory as readStoredHistory, HistoryCorruptError } from './modules/history/historyStore';
+import { saveStrengthRecord, readHistory as readStoredHistory, setAsideUnreadableHistory } from './modules/history/historyStore';
 import { useDialog } from './components/ui/Dialog';
 import { usePublishHeight } from './lib/bottomStack';
 
@@ -153,17 +153,12 @@ function App() {
   };
 
   const handleSaveDebrief = (record) => {
-    try {
-      // Idempotent: a re-save of the same session replaces its record instead of duplicating it.
-      saveStrengthRecord(record, localStorage);
-    } catch (e) {
-      if (e instanceof HistoryCorruptError) {
-        // Keep the session alive so nothing is lost.
-        dialog.notify('HISTORY UNREADABLE — RESTORE A BACKUP', { tone: 'danger' });
-        return;
-      }
-      throw e;
+    // Unreadable old history is moved aside (kept for backup) and a fresh history started.
+    if (setAsideUnreadableHistory(localStorage)) {
+      dialog.notify('OLD HISTORY UNREADABLE — SET ASIDE, KEPT IN BACKUP', { tone: 'danger' });
     }
+    // Idempotent: a re-save of the same session replaces its record instead of duplicating it.
+    saveStrengthRecord(record, localStorage);
     session.endSession();
     setView('HOME');
   };

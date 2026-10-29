@@ -7,7 +7,7 @@ import { OneRepMax } from './OneRepMax';
 import { CardioSheet } from './CardioSheet';
 import { RatingSheet } from './RatingSheet';
 import { durationMinutes, recordLoad, sessionTime } from './historyModel';
-import { HistoryCorruptError, appendRecord, readHistory, replaceRecord } from './historyStore';
+import { appendRecord, readHistory, replaceRecord, setAsideUnreadableHistory } from './historyStore';
 import { formatDayLabel, formatClock } from '../../lib/format';
 import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 
@@ -53,6 +53,8 @@ export const HistoryManager = () => {
             if (!map.has(k)) map.set(k, []);
             map.get(k).push(h);
         }
+        // Within a day, earliest first (a run logged afterwards still sits in time order)
+        for (const list of map.values()) list.sort((a, b) => sessionTime(a) - sessionTime(b));
         return map;
     }, [history]);
 
@@ -74,17 +76,16 @@ export const HistoryManager = () => {
     };
 
     // Run a write through the history store, then reload the list. Returns true on success.
-    // Unreadable stored history is never overwritten; the caller keeps its editor open.
+    // Unreadable old history is moved aside (kept for backup) and a fresh history started.
+    // On a failed write the caller keeps its editor open.
     const persist = (write) => {
         try {
+            if (setAsideUnreadableHistory(localStorage)) {
+                dialog.notify('OLD HISTORY UNREADABLE — SET ASIDE, KEPT IN BACKUP', { tone: 'danger' });
+            }
             write();
         } catch (err) {
-            dialog.notify(
-                err instanceof HistoryCorruptError
-                    ? 'Stored history is unreadable, so nothing was saved.'
-                    : 'Could not save: ' + (err?.message || 'unknown error'),
-                { tone: 'danger' }
-            );
+            dialog.notify('Could not save: ' + (err?.message || 'unknown error'), { tone: 'danger' });
             return false;
         }
         setHistory(readHistory(localStorage));

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readHistory, writeHistory, appendRecord, replaceRecord, saveStrengthRecord, HistoryCorruptError } from './historyStore';
+import { readHistory, writeHistory, appendRecord, replaceRecord, saveStrengthRecord, readUnreadableCopies, setAsideUnreadableHistory } from './historyStore';
 import { fakeStorage } from '../../test/fakeStorage';
 import { legacyRecord, modernStrength, cardio } from './__fixtures__/legacyHistory';
 
@@ -43,16 +43,27 @@ describe('historyStore', () => {
     it('readHistory still returns []', () => {
       expect(readHistory(fakeStorage({ workout_history: bad }))).toEqual([]);
     });
-    it('appendRecord throws HistoryCorruptError and leaves storage untouched', () => {
+    it('appendRecord sets the old value aside verbatim and starts a fresh history', () => {
       const mem = fakeStorage({ workout_history: bad });
-      expect(() => appendRecord(modernStrength, mem)).toThrow(HistoryCorruptError);
-      expect(mem.getItem('workout_history')).toBe(bad);
+      appendRecord(cardio, mem);
+      expect(readHistory(mem).map((r) => r.id)).toEqual([cardio.id]);
+      expect(readUnreadableCopies(mem).map((c) => c.raw)).toEqual([bad]);
     });
-    it('replaceRecord throws HistoryCorruptError and leaves storage untouched', () => {
+    it('replaceRecord sets the old value aside and leaves an empty history', () => {
       const mem = fakeStorage({ workout_history: bad });
-      expect(() => replaceRecord(modernStrength, mem)).toThrow(HistoryCorruptError);
-      expect(mem.getItem('workout_history')).toBe(bad);
+      replaceRecord(modernStrength, mem);
+      expect(readHistory(mem)).toEqual([]);
+      expect(readUnreadableCopies(mem).map((c) => c.raw)).toEqual([bad]);
     });
+  });
+
+  it('setAsideUnreadableHistory keeps every earlier copy and does nothing on readable history', () => {
+    const mem = fakeStorage({ workout_history: 'first' });
+    expect(setAsideUnreadableHistory(mem, 1)).toBe(true);
+    expect(setAsideUnreadableHistory(mem, 2)).toBe(false); // now empty, which is readable
+    mem.setItem('workout_history', 'second');
+    expect(setAsideUnreadableHistory(mem, 3)).toBe(true);
+    expect(readUnreadableCopies(mem)).toEqual([{ setAsideAt: 1, raw: 'first' }, { setAsideAt: 3, raw: 'second' }]);
   });
 
   it('a missing or empty key still counts as an empty history for writes', () => {
@@ -84,10 +95,11 @@ describe('historyStore', () => {
       expect(readHistory(mem).map((r) => r.id)).toEqual([5, 4, 3, 2, 1]);
     });
 
-    it('refuses to write over unreadable history', () => {
+    it('saves into a fresh history when the stored one is unreadable', () => {
       const mem = fakeStorage({ workout_history: 'not json' });
-      expect(() => saveStrengthRecord(modernStrength, mem)).toThrow(HistoryCorruptError);
-      expect(mem.getItem('workout_history')).toBe('not json');
+      saveStrengthRecord(modernStrength, mem);
+      expect(readHistory(mem).map((r) => r.id)).toEqual([modernStrength.id]);
+      expect(readUnreadableCopies(mem).map((c) => c.raw)).toEqual(['not json']);
     });
   });
 });
