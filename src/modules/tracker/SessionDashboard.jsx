@@ -11,7 +11,7 @@ import { usePublishHeight, BOTTOM_ABOVE_NAV_AND_BAR } from '../../lib/bottomStac
 
 const createAlternativeId = () => `alt-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-export const SessionDashboard = ({ onFinishWorkout, onBack, onBottomReachChange }) => {
+export const SessionDashboard = ({ onBack, onBottomReachChange }) => {
     const dialog = useDialog();
     const {
         state,
@@ -20,6 +20,7 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, onBottomReachChange 
         addAdHocExercise,
         keepAdHocExercise,
         startRest,
+        beginDebrief,
     } = useWorkoutSession();
 
     const {
@@ -528,15 +529,7 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, onBottomReachChange 
                 <Button
                     variant="primary"
                     label={`SESSION · ${String(activeDay.name || '').toUpperCase()}${completedCount === totalExercises ? '' : ' · INCOMPLETE'}`}
-                    onClick={() => {
-                        if (completedCount < totalExercises) {
-                            if (window.confirm("You have incomplete exercises. Finish anyway?")) {
-                                onFinishWorkout(sessionLogs, sessionExercises);
-                            }
-                        } else {
-                            onFinishWorkout(sessionLogs, sessionExercises);
-                        }
-                    }}
+                    onClick={() => beginDebrief()}
                 >
                     {completedCount === totalExercises ? 'FINISH WORKOUT' : 'FINISH NOW'}
                 </Button>

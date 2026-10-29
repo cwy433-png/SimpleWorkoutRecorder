@@ -5,12 +5,14 @@ import './index.css';
 import { PlanManager } from './modules/plans/PlanManager';
 import { PlanDetail } from './modules/plans/PlanDetail';
 import { SessionDashboard } from './modules/tracker/SessionDashboard';
+import { DebriefView } from './modules/tracker/DebriefView';
 import { FloatingRestTimer } from './modules/tracker/FloatingRestTimer';
 import { useWorkoutSession } from './modules/tracker/SessionContext';
 import { HistoryManager } from './modules/history/HistoryManager';
 import { AiManager } from './modules/ai/AiManager';
 import { HomeView_Rhodes } from './modules/home/HomeView_Rhodes';
 import { normalizeRecord } from './modules/history/historyModel';
+import { appendRecord, HistoryCorruptError } from './modules/history/historyStore';
 import { useDialog } from './components/ui/Dialog';
 import { usePublishHeight } from './lib/bottomStack';
 
@@ -117,60 +119,17 @@ function App() {
     setView('WORKOUT_DASHBOARD');
   };
 
-  const finishWorkout = (sessionLogs, targetExercises) => {
-    // Read plan/dayIndex from session state — it's the source of truth and
-    // survives reloads, unlike the App-level selectedPlan which is null on restore.
-    const sessionPlan = session.state.plan;
-    const sessionDayIndex = session.state.dayIndex;
-    const activeDay = sessionPlan?.days?.[sessionDayIndex];
-
-    if (!activeDay) {
-      // Defensive: nothing to write, just clear and bail
-      session.endSession();
-      setView('HOME');
-      return;
-    }
-
-    // V2: Use Array for robustness and ID preservation
-    const logsArray = [];
-
-    if (sessionLogs) {
-      Object.entries(sessionLogs).forEach(([exId, sets]) => {
-        // Priority: Look in the exercises passed from the session (includes Ad-Hoc)
-        // Fallback: Look in the active day (standard plan exercises)
-        let exercise = targetExercises?.find(e => e.id == exId);
-        if (!exercise) {
-          exercise = activeDay.exercises.find(e => e.id == exId);
-        }
-
-        if (exercise) {
-          logsArray.push({
-            exerciseId: exercise.id,
-            exerciseName: exercise.name,
-            sets: sets,
-            timestamp: Date.now()
-          });
-        }
-      });
-    }
-
-    const workoutRecord = {
-      id: Date.now(),
-      date: Date.now(),
-      planTitle: sessionPlan.title,
-      dayName: activeDay.name,
-      logs: logsArray,
-      duration: 0,
-      meta: {
-        appVersion: '0.1.0',
-        source: 'manual_session'
+  const handleSaveDebrief = (record) => {
+    try {
+      appendRecord(record, localStorage);
+    } catch (e) {
+      if (e instanceof HistoryCorruptError) {
+        // Keep the session alive so nothing is lost.
+        dialog.notify('HISTORY UNREADABLE — RESTORE A BACKUP', { tone: 'danger' });
+        return;
       }
-    };
-
-    const existingHistory = JSON.parse(localStorage.getItem('workout_history') || '[]');
-    const newHistory = [workoutRecord, ...existingHistory];
-    localStorage.setItem('workout_history', JSON.stringify(newHistory));
-
+      throw e;
+    }
     session.endSession();
     setView('HOME');
   };
@@ -217,9 +176,11 @@ function App() {
       case 'PLAN_DETAIL':
         return <PlanDetail plan={selectedPlan} history={readHistory()} onStartDay={handleStartWorkout} onBack={() => setView('PLANS_LIST')} onHome={() => setView('HOME')} />;
       case 'WORKOUT_DASHBOARD':
+        if (session.state.phase === 'debrief') {
+          return <DebriefView onSave={handleSaveDebrief} />;
+        }
         return (
           <SessionDashboard
-            onFinishWorkout={finishWorkout}
             onBack={() => setView(selectedPlan ? 'PLAN_DETAIL' : 'HOME')}
             onBottomReachChange={setWorkoutScrolledToBottom}
           />
@@ -235,7 +196,7 @@ function App() {
 
   const showNav = ['HOME', 'PLANS_LIST', 'PLAN_DETAIL', 'WORKOUT_DASHBOARD', 'HISTORY', 'AI_COACH'].includes(view)
     && !isKeyboardOpen
-    && (view !== 'WORKOUT_DASHBOARD' || workoutScrolledToBottom);
+    && (view !== 'WORKOUT_DASHBOARD' || session.state.phase === 'debrief' || workoutScrolledToBottom);
   const sessionIsCrossDay = session.isCrossDay();
   const showSessionBar = session.state.isActive && view !== 'WORKOUT_DASHBOARD';
   const onCover = view === 'HOME'; // the cover is dark: the session bar uses its neon-on-black look there
