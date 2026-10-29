@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Check, ChevronDown } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { useDialog } from '../../components/ui/Dialog';
 
 import { ExerciseLogger } from './ExerciseLogger';
 import { useWorkoutSession } from './SessionContext';
@@ -8,6 +11,7 @@ import { useWorkoutSession } from './SessionContext';
 const createAlternativeId = () => `alt-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible = false, onBottomReachChange }) => {
+    const dialog = useDialog();
     const {
         state,
         setExpanded,
@@ -40,7 +44,7 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
     const formatTime = (s) => {
         const min = Math.floor(s / 60);
         const sec = s % 60;
-        return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+        return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
     };
 
     // Workout duration tick
@@ -89,8 +93,8 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
     if (!activeDay) {
         return (
             <div className="flex flex-col items-center justify-center h-full p-10 text-center space-y-4">
-                <div className="text-red-500 font-bold text-xl">Error: Workout Data Not Found</div>
-                <div className="text-white/50 text-sm">Plan: {plan?.title || 'None'}, Day Index: {dayIndex}</div>
+                <div className="font-black text-xl uppercase text-alert">Error: Workout Data Not Found</div>
+                <div className="font-mono text-sm text-text-muted">Plan: {plan?.title || 'None'}, Day Index: {dayIndex}</div>
                 <Button onClick={onBack}>Go Back</Button>
             </div>
         );
@@ -142,7 +146,7 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
         const planIndex = rawPlans.findIndex(p => String(p.id) === String(plan?.id));
 
         if (planIndex === -1) {
-            window.alert('Could not find this plan in saved plans.');
+            dialog.notify('Could not find this plan in saved plans.', { tone: 'danger' });
             return { status: 'missing-plan' };
         }
 
@@ -154,14 +158,14 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
         if (activeDay?.id) {
             resolvedDayIndex = days.findIndex(day => day.id === activeDay.id);
             if (resolvedDayIndex === -1) {
-                window.alert('This workout day no longer exists in the saved plan. Please restart the workout from the updated plan.');
+                dialog.notify('This workout day no longer exists in the saved plan. Please restart the workout from the updated plan.', { tone: 'danger' });
                 return { status: 'missing-day' };
             }
         } else {
             const fallbackDay = days[dayIndex];
             const fallbackMatches = fallbackDay && normalizeExerciseName(fallbackDay.name) === normalizeExerciseName(activeDay?.name);
             if (!fallbackMatches) {
-                window.alert('Could not safely match this workout day in the saved plan.');
+                dialog.notify('Could not safely match this workout day in the saved plan.', { tone: 'danger' });
                 return { status: 'day-mismatch' };
             }
             resolvedDayIndex = dayIndex;
@@ -170,7 +174,7 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
         const targetDay = days[resolvedDayIndex];
 
         if (!targetDay) {
-            window.alert('Could not find this workout day in the saved plan.');
+            dialog.notify('Could not find this workout day in the saved plan.', { tone: 'danger' });
             return { status: 'missing-day' };
         }
 
@@ -212,18 +216,22 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
         return { status: 'saved', exercise: alternativeExercise };
     };
 
-    const handleKeepAdHocExercise = (event, exercise) => {
+    const handleKeepAdHocExercise = async (event, exercise) => {
         event.stopPropagation();
         if (!exercise?.isAdHoc || exercise.isKept) return;
 
-        const confirmed = window.confirm(`Add "${exercise.name}" to ${activeDay.name} alternatives?`);
+        const confirmed = await dialog.confirm({
+            title: 'KEEP AS ALTERNATIVE',
+            message: `Add "${exercise.name}" to ${activeDay.name} alternatives?`,
+            confirmLabel: 'ADD',
+        });
         if (!confirmed) return;
 
         const normalizedName = normalizeExerciseName(exercise.name);
         const alreadyPlanned = (activeDay.exercises || []).some(ex => normalizeExerciseName(ex.name) === normalizedName);
         if (alreadyPlanned) {
             keepAdHocExercise(exercise.id, null);
-            window.alert(`"${exercise.name}" is already a planned exercise for this day.`);
+            dialog.notify(`"${exercise.name}" is already a planned exercise for this day.`);
             return;
         }
 
@@ -235,7 +243,7 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
 
         if (result.status === 'already-planned') {
             keepAdHocExercise(exercise.id, null);
-            window.alert(`"${exercise.name}" is already a planned exercise for this day.`);
+            dialog.notify(`"${exercise.name}" is already a planned exercise for this day.`);
         }
     };
 
@@ -341,49 +349,25 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
         return logs && logs.length >= (ex.sets || 3);
     });
     const completedCount = completedWrapper.length;
-    const progressPercent = totalExercises > 0
-        ? Math.round((completedCount / totalExercises) * 100)
-        : 0;
 
     return (
-        <div className="flex flex-col h-full animate-in fade-in duration-300 relative">
-            {/* Top Bar (Fixed) */}
-            <div className="flex justify-between items-end mb-4 px-2 pt-2">
-                <div>
-                    <Button variant="ghost" size="sm" onClick={onBack} className="mb-2 text-[var(--color-text-muted)] pl-0 hover:text-[var(--color-text-main)]">&larr; Exit</Button>
-                    <h2 className="text-3xl font-black italic text-[var(--color-text-main)] uppercase tracking-tighter leading-none">
-                        {activeDay.name}
-                    </h2>
-                </div>
-                <div className="text-right flex flex-col items-end gap-1">
-                    <div className="font-mono text-xl font-black text-[var(--color-primary)] tracking-tight">{formatTime(duration)}</div>
-                </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="px-2 mb-6">
-                <div className="h-2 w-full rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
-                    <div
-                        className="h-full transition-all duration-500 ease-out"
-                        style={{
-                            width: `${progressPercent}%`,
-                            backgroundColor: '#D0FD3E',
-                            boxShadow: '0 0 15px rgba(208,253,62,0.8)'
-                        }}
-                    ></div>
-                </div>
-                <div className="flex justify-between mt-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: '#8E8E93' }}>
-                    <span>{completedCount} / {totalExercises} Done</span>
-                    <span style={{ color: '#D0FD3E' }}>{progressPercent}%</span>
-                </div>
-            </div>
+        // No animate-in here: its forwards-filled transform would become the containing
+        // block of the fixed footer bar and pin it to this wrapper instead of the viewport.
+        <div className="flex flex-col h-full relative">
+            <PageHeader
+                tag={`SESSION · ${formatTime(duration)}`}
+                title={activeDay.name}
+                sub={`${completedCount} / ${totalExercises} EXERCISES DONE`}
+                right={<Button variant="link" size="sm" onClick={onBack}>&larr; Exit</Button>}
+            />
 
             {/* Accordion List */}
-            <div ref={listRef} onScroll={handleListScroll} className="flex-1 overflow-auto flex flex-col gap-3 pb-48 px-1 no-scrollbar">
+            <div ref={listRef} onScroll={handleListScroll} className="flex-1 overflow-auto flex flex-col gap-3 pb-48 px-4 pt-4 no-scrollbar">
                 {sessionExercises.map((ex, index) => {
                     const logs = sessionLogs[ex.id] || [];
                     const setsDone = logs.length;
-                    const isTargetMet = setsDone >= (ex.sets || 3);
+                    const targetSets = ex.sets || 3;
+                    const isTargetMet = setsDone >= targetSets;
                     const isExpanded = expandedExerciseId === ex.id;
                     const isLast = index === sessionExercises.length - 1;
                     const isSuperset = ex.supersetWithPrevious;
@@ -391,47 +375,46 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
                     return (
                         <div key={ex.id} ref={el => scrollRefs.current[ex.id] = el} className={`${isSuperset ? '-mt-4 relative z-10' : ''}`}>
                             {isSuperset && (
-                                <div className="ml-4 w-0.5 h-4 bg-[var(--color-primary)]/50 mx-auto"></div>
+                                <div className="ml-4 w-0.5 h-4 bg-primary/50 mx-auto"></div>
                             )}
                             <Card
+                                flush
+                                active={isExpanded}
                                 className={`
-                                    transition-all duration-300 overflow-hidden
-                                    ${isSuperset ? 'rounded-t-none border-t-0' : ''}
-                                    ${isExpanded
-                                        ? 'border-2 border-[var(--color-primary)] glow-border bg-[var(--color-surface)] shadow-[0_0_20px_rgba(208,253,62,0.1)]'
-                                        : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/30'
-                                    }
-                                    ${isTargetMet && !isExpanded ? 'opacity-60 grayscale-[0.5]' : ''}
+                                    transition-colors duration-300
+                                    ${isSuperset ? 'border-t-0' : ''}
+                                    ${isTargetMet && !isExpanded ? 'opacity-60' : ''}
                                 `}
                             >
                                 {/* Header (Always Visible) - Click to toggle */}
                                 <div
                                     onClick={() => toggleExpand(ex.id)}
-                                    className="flex justify-between items-center p-1 cursor-pointer"
+                                    className="flex justify-between items-center gap-3 p-3 cursor-pointer"
                                 >
-                                    <div className="flex items-center gap-4">
-                                        {/* Status Circle */}
+                                    <div className="flex min-w-0 items-center gap-3">
+                                        {/* Status box */}
                                         <div className={`
-                                            w-8 h-8 rounded-full flex items-center justify-center font-black text-sm transition-all border-2
+                                            flex h-7 w-7 flex-shrink-0 items-center justify-center border-2 transition-colors
                                             ${isTargetMet
-                                                ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-black'
+                                                ? 'border-primary bg-primary text-primary-ink'
                                                 : isExpanded
-                                                    ? 'border-[var(--color-primary)] text-[var(--color-primary)] animate-pulse'
-                                                    : 'border-white/20 text-[var(--color-text-muted)]'
+                                                    ? 'border-primary text-primary-text'
+                                                    : 'border-border text-text-muted'
                                             }
                                         `}>
-                                            {isTargetMet ? '✓' : ''}
+                                            {isTargetMet && <Check size={16} strokeWidth={3} />}
                                         </div>
 
-                                        <div>
-                                            <h3 className={`font-black italic text-lg uppercase tracking-tight ${isTargetMet ? 'text-[var(--color-text-muted)] line-through' : 'text-[var(--color-text-main)]'}`}>
-                                                {ex.name} {ex.isAdHoc && (
+                                        <div className="min-w-0">
+                                            <h3 className={`m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-black uppercase tracking-[0.02em] ${isTargetMet ? 'text-text-muted line-through' : 'text-text-main'}`}>
+                                                <span className="break-words">{ex.name}</span>
+                                                {ex.isAdHoc && (
                                                     <button
                                                         type="button"
                                                         onClick={(event) => handleKeepAdHocExercise(event, ex)}
-                                                        className={`inline-flex min-h-7 items-center border px-2.5 py-1 text-[10px] rounded-none not-italic align-middle ml-1 transition-all ${ex.isKept
-                                                            ? 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)]'
-                                                            : 'bg-[var(--color-primary)] text-black border-[var(--color-primary)] shadow-[0_0_10px_var(--color-primary)]'
+                                                        className={`inline-flex min-h-7 items-center border px-2.5 py-1 font-mono text-[10px] font-bold tracking-[0.15em] no-underline transition-colors ${ex.isKept
+                                                            ? 'bg-surface border-border text-text-muted'
+                                                            : 'bg-primary text-primary-ink border-primary'
                                                             }`}
                                                         aria-label={ex.isKept ? `${ex.name} kept as alternative` : `Keep ${ex.name} as an alternative`}
                                                     >
@@ -439,37 +422,25 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
                                                     </button>
                                                 )}
                                             </h3>
-                                            <div className="flex flex-col gap-2 mt-2 w-full">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#8E8E93' }}>
-                                                        {setsDone} / {ex.sets || 3} Done
-                                                    </span>
-                                                    <span className="text-[10px] font-bold" style={{ color: '#D0FD3E' }}>
-                                                        {Math.round((setsDone / (ex.sets || 3)) * 100)}%
-                                                    </span>
-                                                </div>
-                                                {/* Mini Progress Bar */}
-                                                <div className="h-2 w-full rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                    <div
-                                                        className="h-full transition-all duration-500"
-                                                        style={{
-                                                            width: `${Math.min(100, (setsDone / (ex.sets || 3)) * 100)}%`,
-                                                            backgroundColor: '#D0FD3E',
-                                                            boxShadow: '0 0 10px rgba(208,253,62,0.6)'
-                                                        }}
-                                                    ></div>
-                                                </div>
+                                            <div className="mt-1 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-text-muted">
+                                                {setsDone} / {targetSets} SETS
                                             </div>
                                         </div>
                                     </div>
-                                    <div className={`transform transition-transform duration-300 text-[var(--color-text-muted)] ${isExpanded ? 'rotate-180' : ''}`}>
-                                        ▼
+                                    <div className="flex flex-shrink-0 items-center gap-2">
+                                        <span className={`font-mono text-xs font-bold ${setsDone > 0 ? 'text-primary-text' : 'text-text-muted'}`}>
+                                            {Math.round((setsDone / targetSets) * 100)}%
+                                        </span>
+                                        <ChevronDown
+                                            size={18}
+                                            className={`text-text-muted transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                                        />
                                     </div>
                                 </div>
 
                                 {/* Expanded Content (Logger) */}
                                 {isExpanded && (
-                                    <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
+                                    <div className="border-t border-border px-3 pb-3 pt-3">
                                         <ExerciseLogger
                                             exercise={ex}
                                             history={logs}
@@ -494,8 +465,8 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
                 {/* ADD EXERCISE BUTTON */}
                 <div className="flex flex-col gap-3">
                     {activeDayAlternatives.length > 0 && (
-                        <div className="p-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-none">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Kept Alternatives</div>
+                        <div className="border border-border bg-surface p-3">
+                            <div className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Kept Alternatives</div>
                             <div className="flex flex-wrap gap-2">
                                 {activeDayAlternatives.map(exercise => {
                                     const alreadyAdded = isExerciseAlreadyInSession(exercise);
@@ -504,9 +475,9 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
                                             key={exercise.id}
                                             type="button"
                                             onClick={() => addExerciseToSession(exercise)}
-                                            className={`px-2.5 py-1.5 border text-[10px] font-black uppercase tracking-wider transition-all ${alreadyAdded
-                                                ? 'border-[var(--color-border)] text-[var(--color-text-muted)] opacity-50'
-                                                : 'border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black'
+                                            className={`border bg-bg px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${alreadyAdded
+                                                ? 'border-border text-text-muted opacity-60'
+                                                : 'border-primary text-primary-text hover:bg-primary hover:text-primary-ink'
                                                 }`}
                                         >
                                             {alreadyAdded ? 'ADDED ' : '+ '}{exercise.name}
@@ -518,34 +489,36 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
                     )}
 
                     {!isAddingExercise ? (
-                        <Button variant="ghost" onClick={() => setIsAddingExercise(true)} className="border-dashed border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:border-[var(--color-primary)] py-4">
+                        <Button variant="link" onClick={() => setIsAddingExercise(true)} className="w-full border border-dashed border-border py-3 hover:border-primary">
                             + ADD AD-HOC EXERCISE
                         </Button>
                     ) : (
-                        <div className="p-4 bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] animate-in fade-in slide-in-from-bottom-2">
-                            <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase mb-2 block">New Exercise Name</label>
-                            <div className="flex gap-2">
+                        <div className="border border-border bg-surface p-4 animate-in fade-in slide-in-from-bottom-2">
+                            <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">New Exercise Name</label>
+                            <div className="flex items-center gap-2">
                                 <input
                                     autoFocus
-                                    className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-4 py-2 text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none"
+                                    className="min-w-0 flex-1 border border-border bg-bg px-3 py-2 font-bold text-text-main outline-none focus:border-primary"
                                     value={newExerciseName}
                                     onChange={e => setNewExerciseName(e.target.value)}
                                     placeholder="e.g. Pushups"
                                     onKeyDown={e => e.key === 'Enter' && handleAddAdHocExercise()}
                                 />
-                                <Button onClick={handleAddAdHocExercise} variant="primary" className="font-black italic">ADD</Button>
+                                <div className="w-24 flex-shrink-0">
+                                    <Button variant="compact" onClick={handleAddAdHocExercise}>ADD</Button>
+                                </div>
                             </div>
-                            <Button variant="ghost" size="sm" onClick={() => setIsAddingExercise(false)} className="mt-2 text-xs text-[var(--color-text-muted)] w-full">Cancel</Button>
+                            <Button variant="link" size="sm" onClick={() => setIsAddingExercise(false)} className="mt-2 w-full">Cancel</Button>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Footer Action */}
-            <div className={`fixed left-0 right-0 p-4 bg-[var(--color-bg)] border-t border-[var(--color-border)] z-40 transition-[bottom] duration-300 ${isBottomNavVisible ? 'bottom-24' : 'bottom-0'}`}>
+            {/* Footer Action: sits flush above the bottom nav (nav is 65px tall) when visible */}
+            <div className={`fixed left-0 right-0 z-40 border-t border-border bg-bg px-4 py-3 transition-[bottom] duration-300 ${isBottomNavVisible ? 'bottom-[65px]' : 'bottom-0'}`}>
                 <Button
-                    className={`w-full py-4 text-xl font-black italic tracking-tight shadow-xl ${completedCount === totalExercises ? '' : 'text-[var(--color-text-muted)] opacity-80'}`}
-                    variant={completedCount === totalExercises ? 'primary' : 'secondary'}
+                    variant="primary"
+                    label={`SESSION · ${String(activeDay.name || '').toUpperCase()}`}
                     onClick={() => {
                         if (completedCount < totalExercises) {
                             if (window.confirm("You have incomplete exercises. Finish anyway?")) {
@@ -556,7 +529,7 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
                         }
                     }}
                 >
-                    {completedCount === totalExercises ? 'FINISH WORKOUT' : 'FINISH NOW (INCOMPLETE)'}
+                    {completedCount === totalExercises ? 'FINISH WORKOUT' : 'FINISH NOW'}
                 </Button>
             </div>
 

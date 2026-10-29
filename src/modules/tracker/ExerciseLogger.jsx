@@ -1,13 +1,14 @@
 
 import React, { useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeftRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { formatMonthDay } from '../../lib/format';
 
 const formatHistoryDate = (value) => {
     if (!value) return 'Previous';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return 'Previous';
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return formatMonthDay(date.getTime());
 };
 
 export const ExerciseLogger = ({ exercise, history = [], previousSessions = [], lastSessionLogs, onSaveSet, onNext, isLastExercise }) => {
@@ -97,9 +98,9 @@ export const ExerciseLogger = ({ exercise, history = [], previousSessions = [], 
     // Input Validation & Max Length Font Sizing
     const getFontSize = (val) => {
         const str = String(val);
-        if (str.length > 5) return 'text-xl';
-        if (str.length > 4) return 'text-2xl';
-        return 'text-3xl';
+        if (str.length > 5) return 'text-base';
+        if (str.length > 4) return 'text-lg';
+        return 'text-xl';
     };
 
     const handleRpeChange = (val) => {
@@ -139,33 +140,37 @@ export const ExerciseLogger = ({ exercise, history = [], previousSessions = [], 
     const targetSets = exercise.sets || 3;
     const isTargetMet = setsDone >= targetSets;
 
+    const inputClass = 'w-full h-11 min-w-0 border border-border bg-bg px-1 text-center font-mono font-extrabold text-text-main transition-colors focus:border-primary focus:outline-none';
+    const labelClass = 'mb-1 flex items-center gap-1 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted';
+    const navBtnClass = (enabled) => `flex h-8 w-8 shrink-0 items-center justify-center border transition-colors ${enabled
+        ? 'border-border text-text-main hover:border-primary hover:text-primary-text'
+        : 'border-transparent text-text-muted opacity-25'
+        }`;
+
     return (
         <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
             {/* HISTORY TABLE */}
             <div
-                className="bg-[var(--color-surface)] border border-[var(--color-primary)]/20 rounded-xl p-3 mb-4 touch-pan-y"
+                className="touch-pan-y"
                 onTouchStart={handleHistoryTouchStart}
                 onTouchEnd={handleHistoryTouchEnd}
             >
-                <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-white/10">
+                <div className="mb-2 flex items-center justify-between gap-2 border-b border-border pb-2">
                     <button
                         type="button"
                         onClick={showOlderHistory}
                         disabled={!canShowOlderHistory}
                         aria-label="Show older history"
-                        className={`w-8 h-8 shrink-0 flex items-center justify-center rounded-lg border transition-colors ${canShowOlderHistory
-                            ? 'border-[var(--color-border)] text-[var(--color-text-main)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]'
-                            : 'border-transparent text-[var(--color-text-muted)] opacity-25'
-                            }`}
+                        className={navBtnClass(canShowOlderHistory)}
                     >
                         <ChevronLeft size={18} />
                     </button>
 
                     <div className="min-w-0 text-center">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-[var(--color-primary)]">
+                        <div className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-primary-text">
                             {activeComparison ? formatHistoryDate(activeComparison.date) : 'No History'}
                         </div>
-                        <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] truncate max-w-[190px]">
+                        <div className="max-w-[190px] truncate font-mono text-[9px] font-bold uppercase tracking-wider text-text-muted">
                             {activeComparison
                                 ? `${activeComparison.dayName || activeComparison.planTitle || 'Previous'} · ${activeComparisonIndex + 1}/${comparisonCount}`
                                 : 'Previous sets unavailable'}
@@ -177,107 +182,100 @@ export const ExerciseLogger = ({ exercise, history = [], previousSessions = [], 
                         onClick={showNewerHistory}
                         disabled={!canShowNewerHistory}
                         aria-label="Show newer history"
-                        className={`w-8 h-8 shrink-0 flex items-center justify-center rounded-lg border transition-colors ${canShowNewerHistory
-                            ? 'border-[var(--color-border)] text-[var(--color-text-main)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]'
-                            : 'border-transparent text-[var(--color-text-muted)] opacity-25'
-                            }`}
+                        className={navBtnClass(canShowNewerHistory)}
                     >
                         <ChevronRight size={18} />
                     </button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '30px 1fr 1fr', gap: '12px' }} className="mb-2 pb-2 border-b border-white/10">
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] self-center">#</div>
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary)] text-right pr-2">Last</div>
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-white text-right pr-2">Now</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '30px 1fr 1fr', gap: '12px' }} className="border-b border-border pb-2">
+                    <div className="self-center font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">#</div>
+                    <div className="pr-2 text-right font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Last</div>
+                    <div className="pr-2 text-right font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-main">Now</div>
                 </div>
 
-                <div className="space-y-2">
+                <div>
                     {Array.from({ length: Math.max(comparisonLogs.length, history.length, 3) }).map((_, i) => {
                         const lastLog = comparisonLogs[i];
                         const currentLog = history[i];
 
                         const formatLog = (log, colorClass) => {
-                            if (!log) return <span className="opacity-10 font-bold">-</span>;
+                            if (!log) return <span className="font-mono text-xs text-text-muted opacity-40">-</span>;
                             const displayW = toDisplay(log.weight);
                             return (
-                                <div className={`grid grid-cols-[1.2fr_15px_0.8fr_15px_0.8fr] gap-0.5 items-center font-bold tracking-tighter text-[10px] ${colorClass}`}>
+                                <div className={`grid grid-cols-[1.2fr_15px_0.8fr_15px_0.8fr] items-center gap-0.5 font-mono text-xs tracking-tighter ${colorClass}`}>
                                     <span className="text-right">{displayW}</span>
-                                    <span className="text-[9px] opacity-40 text-center">×</span>
+                                    <span className="text-center text-[9px] opacity-40">×</span>
                                     <span className="text-center">{log.reps}</span>
-                                    <span className="text-[9px] opacity-40 text-center">@</span>
+                                    <span className="text-center text-[9px] opacity-40">@</span>
                                     <span className="text-left">{log.rpe || '-'}</span>
                                 </div>
                             );
                         };
 
                         return (
-                            <div key={i} style={{ display: 'grid', gridTemplateColumns: '30px 1fr 1fr', gap: '12px' }} className="items-center py-1">
-                                <div className="text-[var(--color-text-muted)] font-bold text-xs">{i + 1}</div>
-                                <div className="flex justify-end">{formatLog(lastLog, 'text-[var(--color-primary)] font-medium')}</div>
-                                <div className="flex justify-end">{formatLog(currentLog, 'text-[var(--color-text-main)] font-medium')}</div>
+                            <div key={i} style={{ display: 'grid', gridTemplateColumns: '30px 1fr 1fr', gap: '12px' }} className="items-center border-b border-surface py-1.5">
+                                <div className="font-mono text-xs font-bold text-text-muted">{i + 1}</div>
+                                <div className="flex justify-end pr-2">{formatLog(lastLog, 'text-text-muted')}</div>
+                                <div className="flex justify-end pr-2">{formatLog(currentLog, 'text-text-main font-bold')}</div>
                             </div>
                         );
                     })}
                 </div>
 
-                <div className="mt-3 pt-2 border-t border-black/5 text-[9px] font-mono text-[var(--color-text-muted)] text-center opacity-60">
+                <div className="mt-2 text-center font-mono text-[9px] uppercase tracking-[0.15em] text-text-muted">
                     {unit} × REPS @ RPE
                 </div>
             </div>
 
             {/* LOGGING INPUTS */}
-            <div className="flex justify-center gap-3 bg-black/20 p-4 rounded-xl border border-white/5">
+            <div className="grid grid-cols-[1.3fr_1fr_1fr] gap-2">
                 {/* Weight Input */}
-                <div className="flex flex-col items-center flex-[1.4]">
-                    <div onClick={toggleUnit} className="text-[10px] text-center mb-2 font-black uppercase text-[var(--color-text-muted)] cursor-pointer hover:text-white transition-colors flex items-center gap-1">
-                        {unit} <span className="opacity-50">⇄</span>
-                    </div>
+                <div className="flex min-w-0 flex-col">
+                    <button type="button" onClick={toggleUnit} className={`${labelClass} cursor-pointer hover:text-text-main`}>
+                        {unit} <ArrowLeftRight size={10} className="opacity-60" />
+                    </button>
                     <input
                         type="number" inputMode="decimal"
                         value={weight} onChange={e => setWeight(e.target.value)}
-                        className={`w-full min-w-[80px] p-3 text-center bg-white rounded-lg text-black font-black border-2 border-white/20 focus:border-[var(--color-primary)] focus:outline-none transition-all ${getFontSize(weight)}`}
+                        className={`${inputClass} ${getFontSize(weight)}`}
                         placeholder="-"
                     />
                 </div>
 
                 {/* Reps Input */}
-                <div className="flex flex-col items-center flex-1">
-                    <label className="text-[10px] text-center mb-2 font-black uppercase text-[var(--color-text-muted)]">REPS</label>
+                <div className="flex min-w-0 flex-col">
+                    <label className={labelClass}>REPS</label>
                     <input
                         type="number" inputMode="numeric"
                         value={reps} onChange={e => setReps(e.target.value)}
-                        className={`w-full min-w-[60px] p-3 text-center bg-white rounded-lg text-black font-black border-2 border-white/20 focus:border-[var(--color-primary)] focus:outline-none transition-all ${getFontSize(reps)}`}
+                        className={`${inputClass} ${getFontSize(reps)}`}
                         placeholder="-"
                     />
                 </div>
 
                 {/* RPE/RIR Input */}
-                <div className="flex flex-col items-center flex-1">
-                    <div onClick={toggleRpeMode} className="text-[10px] text-center mb-2 font-black uppercase text-[var(--color-text-muted)] cursor-pointer hover:text-white transition-colors flex items-center gap-1">
-                        {rpeMode} <span className="opacity-50">⇄</span>
-                    </div>
+                <div className="flex min-w-0 flex-col">
+                    <button type="button" onClick={toggleRpeMode} className={`${labelClass} cursor-pointer hover:text-text-main`}>
+                        {rpeMode} <ArrowLeftRight size={10} className="opacity-60" />
+                    </button>
                     <input
                         type="number" inputMode="decimal"
                         value={rpeInput} onChange={e => handleRpeChange(e.target.value)}
-                        className={`w-full min-w-[60px] p-3 text-center bg-white rounded-lg text-black font-black border-2 border-white/20 focus:border-[var(--color-primary)] focus:outline-none transition-all ${getFontSize(rpeInput)}`}
+                        className={`${inputClass} ${getFontSize(rpeInput)}`}
                         placeholder="-"
                     />
                 </div>
             </div>
 
             {/* LOG BUTTON */}
-            <Button
-                size="lg"
-                onClick={handleLog}
-                className={`w-full py-4 text-lg font-black italic shadow-lg transition-all active:scale-[0.98] ${isTargetMet ? 'bg-white text-black hover:bg-white/90' : ''}`}
-            >
+            <Button variant="compact" onClick={handleLog}>
                 {isTargetMet ? '+ BONUS SET' : 'LOG SET'}
             </Button>
 
             {isTargetMet && !isLastExercise && (
-                <div className="mt-2 text-center">
-                    <div className="text-xs text-[var(--color-primary)] font-bold uppercase animate-pulse mb-2">Target Complete</div>
+                <div className="text-center font-mono text-xs font-bold uppercase tracking-[0.15em] text-primary-text">
+                    Target Complete
                 </div>
             )}
         </div>

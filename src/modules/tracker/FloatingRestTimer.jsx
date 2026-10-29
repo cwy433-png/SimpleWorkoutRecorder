@@ -106,7 +106,7 @@ function ActiveFloatingRestTimer({ restState, commitRest, showFinishBar, isBotto
     const mutedColor = filled ? 'var(--color-primary-ink)' : 'var(--color-text-muted)';
     const cornerColor = filled ? 'var(--color-primary-ink)' : 'var(--color-primary)';
     const bottomClass = showFinishBar
-        ? isBottomNavVisible ? 'bottom-48' : 'bottom-24'
+        ? isBottomNavVisible ? 'bottom-40' : 'bottom-24'
         : 'bottom-20';
 
     const handleCommit = () => {
