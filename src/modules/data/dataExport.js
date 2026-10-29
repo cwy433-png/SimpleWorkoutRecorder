@@ -112,7 +112,7 @@ WHAT I WOULD LIKE
 3. For strength exercises, show progression in weight, reps and volume (weightKg x reps), and flag stalls.
 4. Give concrete, practical suggestions for the coming weeks, and tell me which data you would need to be more certain.`;
 
-const BACKUP_KEYS = ['workout_history', 'workout_plans', 'default_plan_id', 'enabled_quote_packs'];
+export const BACKUP_KEYS = ['workout_history', 'workout_plans', 'default_plan_id', 'enabled_quote_packs'];
 
 function readJson(storage, key, fallback) {
   const raw = storage.getItem(key);

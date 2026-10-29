@@ -3,7 +3,7 @@ import { Button } from '../../components/ui/Button';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useDialog } from '../../components/ui/Dialog';
 import { readHistory } from '../history/historyStore';
-import { AI_PROMPT, buildAiExport, createBackup, localDateStamp, restoreBackup } from './dataExport';
+import { AI_PROMPT, BACKUP_KEYS, buildAiExport, createBackup, localDateStamp, restoreBackup } from './dataExport';
 
 function downloadJson(data, filename) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -71,6 +71,14 @@ export const DataView = () => {
       return;
     }
 
+    // Validate before asking: a file with none of the backup keys is rejected without a prompt.
+    const isBackup = data && typeof data === 'object' && !Array.isArray(data)
+      && BACKUP_KEYS.some((k) => k in data);
+    if (!isBackup) {
+      dialog.notify('NOT A BACKUP FILE', { tone: 'danger' });
+      return;
+    }
+
     const ok = await dialog.confirm({
       title: 'RESTORE BACKUP',
       message: 'This replaces your current history, plans and settings with the contents of the backup.',
@@ -81,6 +89,7 @@ export const DataView = () => {
 
     const written = restoreBackup(data, localStorage);
     if (written.length === 0) {
+      // Backup keys were present but none had a usable value.
       dialog.notify('NOT A BACKUP FILE', { tone: 'danger' });
       return;
     }
