@@ -10,9 +10,19 @@ import { useWorkoutSession } from './modules/tracker/SessionContext';
 import { HistoryManager } from './modules/history/HistoryManager';
 import { AiManager } from './modules/ai/AiManager';
 import { HomeView_Rhodes } from './modules/home/HomeView_Rhodes';
+import { normalizeRecord } from './modules/history/historyModel';
 
 // Motivational Quotes Database
 // Motivational Quotes moved to src/data/quotes.js
+
+// Fresh read of the saved history, normalized (legacy records included).
+const readHistory = () => {
+  try {
+    return JSON.parse(localStorage.getItem('workout_history') || '[]').map(normalizeRecord);
+  } catch {
+    return [];
+  }
+};
 
 function App() {
   const [view, setView] = useState('HOME');
@@ -196,7 +206,7 @@ function App() {
       case 'PLANS_LIST':
         return <PlanManager onSelectPlan={handleSelectPlan} onBack={() => setView('HOME')} />;
       case 'PLAN_DETAIL':
-        return <PlanDetail plan={selectedPlan} onStartDay={handleStartWorkout} onBack={() => setView('PLANS_LIST')} onHome={() => setView('HOME')} />;
+        return <PlanDetail plan={selectedPlan} history={readHistory()} onStartDay={handleStartWorkout} onBack={() => setView('PLANS_LIST')} onHome={() => setView('HOME')} />;
       case 'WORKOUT_DASHBOARD':
         return (
           <SessionDashboard

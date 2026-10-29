@@ -1,47 +1,95 @@
 import React from 'react';
+import { ChevronRight } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { isTrainingDay, lastTrainedDayIndex } from '../history/historyModel';
 
-export const PlanDetail = ({ plan, onBack, onHome, onStartDay }) => {
+const startOfLocalDay = (ts) => {
+    const d = new Date(ts);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+};
+
+// Whole local calendar days between `ts` and now (0 = today).
+const daysAgo = (ts, now = Date.now()) =>
+    Math.max(0, Math.round((startOfLocalDay(now) - startOfLocalDay(ts)) / 864e5));
+
+export const PlanDetail = ({ plan, history = [], onBack, onHome, onStartDay }) => {
+    const days = plan.days || [];
+    const trainingCount = days.filter(isTrainingDay).length;
+    const last = lastTrainedDayIndex(history, plan);
+    const lastAgo = last ? daysAgo(last.ts) : null;
+
     return (
-        <div className="flex flex-col h-full gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
-            {/* Header */}
-            <div className="flex items-center justify-between px-2 pt-4 mb-2">
-                <Button size="sm" variant="ghost" onClick={onBack}>&larr; Plans</Button>
-                {onHome && <Button size="sm" variant="ghost" onClick={onHome}>Home ⌂</Button>}
+        <div className="flex w-full flex-col animate-in fade-in duration-300">
+            <div className="flex items-center justify-between px-4 pt-3">
+                <Button variant="link" onClick={onBack} className="!justify-start">&larr; PLANS</Button>
+                {onHome && <Button variant="link" onClick={onHome}>HOME</Button>}
             </div>
 
-            <div className="px-2 mb-4">
-                <h2 className="text-3xl sm:text-4xl font-black italic text-[var(--color-text-main)] mb-1 uppercase tracking-tighter break-words leading-none">
-                    {plan.title.split(' ')[0]} <span className="text-[var(--color-primary)]">{plan.title.split(' ').slice(1).join(' ')}</span>
-                </h2>
-                <p className="text-[var(--color-text-muted)] text-sm font-bold uppercase tracking-widest">
-                    {plan.days.length} Training Days • Select your focus
-                </p>
-            </div>
+            <PageHeader
+                tag="PLAN"
+                title={plan.title}
+                sub={`${trainingCount} TRAINING ${trainingCount === 1 ? 'DAY' : 'DAYS'} · TAP A DAY TO START`}
+            />
 
-            <div className="flex-1 overflow-auto flex flex-col gap-4 pb-10 no-scrollbar">
-                {plan.days.map((day, index) => (
-                    <Card key={day.id || index} className="bg-[var(--color-surface)] border border-[var(--color-border)] overflow-hidden group hover:border-[var(--color-primary)] transition-all">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-2xl font-black italic text-[var(--color-text-main)] group-hover:text-[var(--color-primary)] transition-colors">{day.name}</h3>
-                            <Button size="sm" onClick={() => onStartDay(index, day)} className="shadow-[0_0_15px_rgba(208,253,62,0.2)] text-black font-bold">
-                                START &rarr;
-                            </Button>
-                        </div>
+            <div className="grid gap-3 px-4 pb-28 pt-4">
+                {days.map((day, index) => {
+                    if (!isTrainingDay(day)) {
+                        return (
+                            <div
+                                key={day.id || index}
+                                className="flex items-center gap-3 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted"
+                            >
+                                <span className="h-px flex-1 bg-border" />
+                                <span>REST</span>
+                                <span className="h-px flex-1 bg-border" />
+                            </div>
+                        );
+                    }
 
-                        <div className="space-y-2">
-                            {day.exercises.map((ex, i) => (
-                                <div key={i} className="flex items-center text-sm text-[var(--color-text-muted)]">
-                                    <div className="w-1 h-1 rounded-full bg-[var(--color-primary)] mr-3 opacity-50"></div>
-                                    <span className="flex-1 font-medium text-[var(--color-text-main)]">{ex.name}</span>
-                                    <span className="opacity-50 font-mono">{ex.sets} x {ex.reps}</span>
+                    const isLast = last && last.dayIndex === index;
+                    const exercises = day.exercises || [];
+                    return (
+                        <Card key={day.id || index} flush>
+                            <button
+                                type="button"
+                                onClick={() => onStartDay(index)}
+                                className="flex w-full cursor-pointer items-stretch text-left transition-colors hover:bg-surface-hover active:bg-surface-hover"
+                            >
+                                <div className="min-w-0 flex-1 px-4 pb-3 pt-4">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <h3 className="break-words text-xl font-black uppercase leading-tight tracking-[0.02em] text-text-main">
+                                            {day.name}
+                                        </h3>
+                                        {isLast && (
+                                            <span className="border border-primary bg-primary-soft px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-primary-text">
+                                                LAST · {lastAgo === 0 ? 'TODAY' : `${lastAgo}D AGO`}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="mt-1 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-text-muted">
+                                        {exercises.length} {exercises.length === 1 ? 'EXERCISE' : 'EXERCISES'}
+                                    </div>
+                                    <ul className="mt-3 space-y-1.5">
+                                        {exercises.map((ex, i) => (
+                                            <li key={ex.id || i} className="flex items-center gap-3 text-sm">
+                                                <span className="min-w-0 flex-1 truncate font-medium text-text-main">{ex.name}</span>
+                                                <span className="flex-shrink-0 font-mono text-xs text-text-muted">{ex.sets} × {ex.reps}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
                                 </div>
-                            ))}
-                            {day.exercises.length === 0 && <span className="text-xs opacity-30 italic">Rest Day / Active Recovery</span>}
-                        </div>
-                    </Card>
-                ))}
+                                <div
+                                    aria-hidden
+                                    className="flex w-8 flex-shrink-0 items-center justify-center border-l border-border text-primary-text"
+                                >
+                                    <ChevronRight size={18} strokeWidth={2.5} />
+                                </div>
+                            </button>
+                        </Card>
+                    );
+                })}
             </div>
         </div>
     );

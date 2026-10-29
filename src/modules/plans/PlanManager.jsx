@@ -3,6 +3,7 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { parseFile, parseRawData } from './PlanImporter';
 import { createPlan } from './PlanModel';
+import { isTrainingDay } from '../history/historyModel';
 import { PlanEditor } from './PlanEditor';
 import { LLM_PROMPT_TEMPLATE } from '../../data/llmPrompt';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -148,7 +149,7 @@ export const PlanManager = ({ onSelectPlan, onBack }) => {
                                     {plan.title}
                                 </h3>
                                 <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.15em]">
-                                    <span className="text-text-muted">{plan.days?.length || 0} TRAINING DAYS</span>
+                                    <span className="text-text-muted">{(plan.days || []).filter(isTrainingDay).length} TRAINING DAYS</span>
                                     {isDefault && <span className="border border-primary px-1.5 py-0.5 text-primary-text">DEFAULT</span>}
                                 </div>
                             </div>

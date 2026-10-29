@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { Link2, X } from 'lucide-react';
 import { createDay, createExercise, createPlan } from './PlanModel';
 
 export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
@@ -119,97 +120,105 @@ export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
         setPlan({ ...plan, days: newDays });
     };
 
+    const fieldLabel = 'text-center font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-text-muted';
+    const numField = 'w-full min-w-0 border border-border bg-bg px-1 py-2 text-center font-mono text-sm font-bold text-text-main outline-none transition-colors focus:border-primary';
+    const removeBtn = 'flex h-9 w-9 flex-shrink-0 cursor-pointer items-center justify-center text-text-muted transition-colors hover:text-alert';
+
+    // No animate-in on the root: its retained transform would trap the fixed footer.
     return (
-        <div className="flex flex-col gap-6 pb-32 animate-in fade-in duration-300 w-full relative">
-            <div className="flex justify-between items-center px-4 pt-4">
-                <h2 className="text-3xl font-black text-[var(--color-text-main)] uppercase tracking-tighter">
-                    Edit <span className="text-[var(--color-primary)]">Plan</span>
-                </h2>
-                {onHome && <Button size="sm" variant="ghost" onClick={onHome}>Home ⌂</Button>}
-            </div>
+        <div className="relative flex w-full flex-col">
+            <PageHeader
+                tag="PLAN"
+                title="Edit Plan"
+                sub={`${plan.days.length} ${plan.days.length === 1 ? 'DAY' : 'DAYS'}`}
+                right={onHome && <Button variant="link" onClick={onHome}>HOME</Button>}
+            />
 
-            <div className="px-2">
-                <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-2 block">General Info</label>
-                <input
-                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-none p-4 text-xl font-bold text-[var(--color-text-main)] focus:border-[var(--color-primary)] focus:outline-none transition-all"
-                    value={plan.title}
-                    onChange={(e) => updatePlanTitle(e.target.value)}
-                    placeholder="Plan Title"
-                />
-            </div>
+            <div className="flex flex-col gap-4 px-4 pb-48 pt-4">
+                <div>
+                    <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">General Info</label>
+                    <input
+                        className="w-full border border-border bg-bg p-3 text-xl font-bold text-text-main transition-colors focus:border-primary focus:outline-none"
+                        value={plan.title}
+                        onChange={(e) => updatePlanTitle(e.target.value)}
+                        placeholder="Plan Title"
+                    />
+                </div>
 
-            <div className="flex flex-col gap-6">
                 {plan.days.map((day, dayIndex) => (
-                    <Card key={day.id} className="relative bg-[var(--color-surface)] border border-[var(--color-border)] p-4 rounded-3xl overflow-hidden shadow-sm">
-                        <div className="flex justify-between items-center mb-6">
-                            <div className="bg-[var(--color-bg)] px-4 py-2 rounded-xl border border-[var(--color-border)]">
-                                <input
-                                    className="bg-transparent text-lg font-black italic text-[var(--color-text-main)] border-none focus:outline-none w-full uppercase"
-                                    value={day.name}
-                                    onChange={(e) => updateDayName(dayIndex, e.target.value)}
-                                    placeholder="DAY NAME"
-                                />
-                            </div>
-                            <button onClick={() => removeDay(dayIndex)} className="text-[var(--color-text-muted)] hover:text-[var(--color-alert)] transition-colors p-2">✕</button>
+                    <Card key={day.id}>
+                        <div className="mb-4 flex items-center gap-2">
+                            <input
+                                className="min-w-0 flex-1 border border-border bg-bg px-3 py-2 text-lg font-black uppercase text-text-main transition-colors focus:border-primary focus:outline-none"
+                                value={day.name}
+                                onChange={(e) => updateDayName(dayIndex, e.target.value)}
+                                placeholder="DAY NAME"
+                            />
+                            <button onClick={() => removeDay(dayIndex)} className={removeBtn} aria-label="Remove day">
+                                <X size={18} />
+                            </button>
                         </div>
 
-                        <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-3">
                             {day.exercises.map((ex, exIndex) => (
-                                <div key={ex.id} className="bg-[var(--color-bg)]/50 p-4 rounded-none border border-[var(--color-border)]">
-                                    <div className="flex justify-between mb-4 items-center">
-                                        <div className="flex-1 border-b-2 border-dashed border-[var(--color-border)] focus-within:border-[var(--color-primary)] transition-colors pb-1 mr-2">
+                                <div key={ex.id} className="border border-border bg-bg p-3">
+                                    <div className="mb-3 flex items-center">
+                                        <div className="mr-2 flex-1 border-b-2 border-dashed border-border pb-1 transition-colors focus-within:border-primary">
                                             <input
-                                                className="bg-transparent font-black text-[var(--color-text-main)] border-none focus:outline-none w-full uppercase tracking-tight text-lg placeholder:text-[var(--color-primary)] placeholder:opacity-70 caret-[var(--color-primary)]"
+                                                className="w-full border-none bg-transparent text-lg font-black uppercase tracking-tight text-text-main caret-primary focus:outline-none placeholder:text-primary-text placeholder:opacity-70"
                                                 value={ex.name}
                                                 onChange={(e) => updateExercise(dayIndex, exIndex, 'name', e.target.value)}
                                                 placeholder="NEW EXERCISE"
                                             />
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            {/* Superset Toggle */}
+                                        <div className="flex items-center">
                                             {exIndex > 0 && (
                                                 <button
                                                     onClick={() => updateExercise(dayIndex, exIndex, 'supersetWithPrevious', !ex.supersetWithPrevious)}
-                                                    className={`p-1 rounded transition-all ${ex.supersetWithPrevious ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/10' : 'text-[var(--color-text-muted)] opacity-30 hover:opacity-100'}`}
+                                                    className={`flex h-9 w-9 cursor-pointer items-center justify-center border transition-colors ${ex.supersetWithPrevious ? 'border-primary bg-primary-soft text-primary-text' : 'border-transparent text-text-muted hover:text-text-main'}`}
                                                     title="Superset with previous"
+                                                    aria-label="Superset with previous"
+                                                    aria-pressed={!!ex.supersetWithPrevious}
                                                 >
-                                                    <span className="text-xs font-bold transform rotate-90 inline-block">🔗</span>
+                                                    <Link2 size={16} />
                                                 </button>
                                             )}
-                                            <button onClick={() => removeExercise(dayIndex, exIndex)} className="text-[var(--color-text-muted)] hover:text-[var(--color-alert)] transition-colors text-xs font-bold uppercase p-2">✕</button>
+                                            <button onClick={() => removeExercise(dayIndex, exIndex)} className={removeBtn} aria-label="Remove exercise">
+                                                <X size={16} />
+                                            </button>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-4 gap-3">
+                                    <div className="grid grid-cols-4 gap-2">
                                         <div className="flex flex-col gap-1">
-                                            <label className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase text-center">Sets</label>
+                                            <label className={fieldLabel}>Sets</label>
                                             <input
-                                                className="bg-[var(--color-bg)] rounded-none px-2 py-2 text-sm text-center text-[var(--color-text-main)] font-bold border border-[var(--color-border)] focus:border-[var(--color-primary)] outline-none"
+                                                className={numField}
                                                 value={ex.sets}
                                                 type="number"
                                                 onChange={(e) => updateExercise(dayIndex, exIndex, 'sets', parseInt(e.target.value))}
                                             />
                                         </div>
                                         <div className="flex flex-col gap-1">
-                                            <label className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase text-center">Reps</label>
+                                            <label className={fieldLabel}>Reps</label>
                                             <input
-                                                className="bg-[var(--color-bg)] rounded-none px-2 py-2 text-sm text-center text-[var(--color-text-main)] font-bold border border-[var(--color-border)] focus:border-[var(--color-primary)] outline-none"
+                                                className={numField}
                                                 value={ex.reps}
                                                 onChange={(e) => updateExercise(dayIndex, exIndex, 'reps', e.target.value)}
                                             />
                                         </div>
                                         <div className="flex flex-col gap-1">
-                                            <label className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase text-center">RPE</label>
+                                            <label className={fieldLabel}>RPE</label>
                                             <input
-                                                className="bg-[var(--color-bg)] rounded-none px-2 py-2 text-sm text-center text-[var(--color-primary)] font-bold border border-[var(--color-border)] focus:border-[var(--color-primary)] outline-none"
+                                                className={`${numField} !text-primary-text`}
                                                 value={ex.rpe}
                                                 type="number"
                                                 onChange={(e) => updateExercise(dayIndex, exIndex, 'rpe', parseInt(e.target.value))}
                                             />
                                         </div>
                                         <div className="flex flex-col gap-1">
-                                            <label className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase text-center">Rest (s)</label>
+                                            <label className={fieldLabel}>Rest (s)</label>
                                             <input
-                                                className="bg-[var(--color-bg)] rounded-none px-2 py-2 text-sm text-center text-[var(--color-text-main)] font-bold border border-[var(--color-border)] focus:border-[var(--color-primary)] outline-none"
+                                                className={numField}
                                                 value={ex.targetRest || 90}
                                                 type="number"
                                                 onChange={(e) => updateExercise(dayIndex, exIndex, 'targetRest', parseInt(e.target.value))}
@@ -219,30 +228,44 @@ export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
                                 </div>
                             ))}
                             {!day.isRestDay && (
-                                <Button size="sm" variant="ghost" onClick={() => addExercise(dayIndex)} className="border-dashed border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-primary)] py-4">+ ADD EXERCISE</Button>
+                                <button
+                                    onClick={() => addExercise(dayIndex)}
+                                    className="min-h-[48px] cursor-pointer border border-dashed border-border font-mono text-[11px] font-bold uppercase tracking-[0.15em] text-text-muted transition-colors hover:border-primary hover:text-primary-text"
+                                >
+                                    + ADD EXERCISE
+                                </button>
                             )}
                             {day.isRestDay && (
-                                <div className="text-center py-4 text-[var(--color-text-muted)] text-sm italic opacity-60">Recovery Day - No Exercises</div>
+                                <div className="py-4 text-center font-mono text-[11px] font-bold uppercase tracking-[0.15em] text-text-muted">
+                                    Recovery day · no exercises
+                                </div>
                             )}
                         </div>
                     </Card>
                 ))}
+
+                <div className="flex gap-2">
+                    <button
+                        onClick={addDay}
+                        className="flex min-h-[48px] flex-1 cursor-pointer items-center justify-center border border-border bg-surface font-mono text-[11px] font-bold uppercase tracking-[0.15em] text-text-main transition-colors hover:border-primary"
+                    >
+                        + WORKOUT DAY
+                    </button>
+                    <button
+                        onClick={addRestDay}
+                        className="flex min-h-[48px] cursor-pointer items-center justify-center whitespace-nowrap border border-dashed border-border px-4 font-mono text-[11px] font-bold uppercase tracking-[0.15em] text-text-muted transition-colors hover:border-primary hover:text-primary-text"
+                    >
+                        + REST DAY
+                    </button>
+                </div>
             </div>
 
-            <div className="flex gap-2 mx-2">
-                <button
-                    onClick={addDay}
-                    className="flex-1 py-4 min-h-[56px] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold uppercase text-sm leading-normal transition-all hover:border-[var(--color-primary)] flex items-center justify-center text-center"
-                >+ Workout Day</button>
-                <button
-                    onClick={addRestDay}
-                    className="py-4 px-4 min-h-[56px] border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] font-bold uppercase text-sm leading-normal transition-all flex items-center justify-center whitespace-nowrap"
-                >+ Rest Day</button>
-            </div>
-
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-[var(--color-bg)] border-t border-[var(--color-border)] flex gap-4 z-20">
-                <Button variant="ghost" className="flex-1 font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface)]" onClick={onCancel}>CANCEL</Button>
-                <Button className="flex-1 font-bold bg-[var(--color-primary)] text-black hover:opacity-90 shadow-[0_0_15px_rgba(208,253,62,0.4)]" onClick={() => onSave(plan)}>SAVE CHANGES</Button>
+            {/* Sits above the 80px bottom nav, which is shown on this page. */}
+            <div className="fixed inset-x-0 bottom-20 z-20 border-t border-border bg-bg">
+                <div className="mx-auto flex w-full max-w-md items-center gap-3 px-4 py-3">
+                    <Button variant="link" className="flex-shrink-0" onClick={onCancel}>CANCEL</Button>
+                    <Button label="PLAN" className="flex-1" onClick={() => onSave(plan)}>SAVE</Button>
+                </div>
             </div>
         </div>
     );
