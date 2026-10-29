@@ -35,6 +35,8 @@ export function FloatingRestTimer() {
     const { restState } = state;
 
     if (!restState.isActive || !restState.startTime) return null;
+    // The session is over once FINISH is tapped; keep the rest state untouched so BACK TO SESSION restores the timer.
+    if (state.phase === 'debrief') return null;
 
     return (
         <ActiveFloatingRestTimer
