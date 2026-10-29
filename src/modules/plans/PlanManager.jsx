@@ -5,9 +5,13 @@ import { parseFile, parseRawData } from './PlanImporter';
 import { createPlan } from './PlanModel';
 import { PlanEditor } from './PlanEditor';
 import { LLM_PROMPT_TEMPLATE } from '../../data/llmPrompt';
-import { Package } from 'lucide-react';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { Sheet } from '../../components/ui/Sheet';
+import { useDialog } from '../../components/ui/Dialog';
+import { Package, Star, Pencil, Trash2, FileUp, Clipboard } from 'lucide-react';
 
 export const PlanManager = ({ onSelectPlan, onBack }) => {
+    const dialog = useDialog();
     const [plans, setPlans] = useState([]);
     const [editingPlan, setEditingPlan] = useState(null);
     const [defaultPlanId, setDefaultPlanId] = useState(localStorage.getItem('default_plan_id'));
@@ -44,9 +48,9 @@ export const PlanManager = ({ onSelectPlan, onBack }) => {
             const newPlan = await parseFile(file);
             savePlan(newPlan);
             setShowImportModal(false);
-            alert(`Imported: ${newPlan.title}`);
+            dialog.notify(`Imported: ${newPlan.title}`);
         } catch (err) {
-            alert('Failed to import: ' + err.message);
+            dialog.notify('Failed to import: ' + err.message, { tone: 'danger' });
         }
     };
 
@@ -57,16 +61,17 @@ export const PlanManager = ({ onSelectPlan, onBack }) => {
             savePlan(newPlan);
             setPasteContent('');
             setShowImportModal(false);
-            alert(`Imported: ${newPlan.title}`);
+            dialog.notify(`Imported: ${newPlan.title}`);
         } catch (err) {
-            alert('Failed to parse JSON. Please check the format.\nError: ' + err.message);
+            dialog.notify('Failed to parse JSON. Please check the format. ' + err.message, { tone: 'danger' });
         }
     };
 
     const copyPromptToClipboard = () => {
-        navigator.clipboard.writeText(LLM_PROMPT_TEMPLATE).then(() => {
-            alert("AI Prompt copied to clipboard! Paste it into ChatGPT/Claude.");
-        });
+        navigator.clipboard.writeText(LLM_PROMPT_TEMPLATE).then(
+            () => dialog.notify('AI prompt copied. Paste it into ChatGPT/Claude.'),
+            () => dialog.notify('Could not copy to clipboard.', { tone: 'danger' })
+        );
     };
 
     const savePlan = (planToSave) => {
@@ -84,8 +89,15 @@ export const PlanManager = ({ onSelectPlan, onBack }) => {
         setEditingPlan(null);
     };
 
-    const deletePlan = (id) => {
-        if (!window.confirm("Delete this plan?")) return;
+    const deletePlan = async (plan) => {
+        const id = plan.id;
+        const ok = await dialog.confirm({
+            title: 'DELETE PLAN',
+            message: `Delete "${plan.title}"? This cannot be undone.`,
+            confirmLabel: 'DELETE',
+            tone: 'danger',
+        });
+        if (!ok) return;
         const updated = plans.filter(p => p.id !== id);
         setPlans(updated);
         localStorage.setItem('workout_plans', JSON.stringify(updated));
@@ -106,65 +118,64 @@ export const PlanManager = ({ onSelectPlan, onBack }) => {
         );
     }
 
+    const iconBtn = 'flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center border transition-colors';
+
     return (
-        <div className="flex flex-col gap-6 animate-in fade-in duration-300 relative w-full max-w-full box-border">
-            <div className="flex justify-between items-center px-4 pt-4 gap-2">
-                <Button size="sm" variant="ghost" onClick={onBack} className="whitespace-nowrap">&larr; Home</Button>
-                <div className="flex gap-1 flex-shrink-0">
-                    <button
-                        onClick={() => setShowImportModal(true)}
-                        className="border-2 border-[var(--color-border)] bg-transparent text-[var(--color-text-main)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] whitespace-nowrap px-3 py-1.5 text-xs font-bold uppercase transition-all"
-                    >+ Import</button>
-                    <button
-                        onClick={() => setEditingPlan('NEW')}
-                        className="border-2 border-[var(--color-primary)] bg-transparent text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black whitespace-nowrap px-3 py-1.5 text-xs font-bold uppercase transition-all"
-                    >+ Create</button>
-                </div>
+        <div className="relative box-border flex w-full max-w-full flex-col animate-in fade-in duration-300">
+            <div className="px-4 pt-3">
+                <Button variant="link" onClick={onBack} className="!justify-start">&larr; HOME</Button>
             </div>
 
-            <div className="px-4">
-                <h2 className="text-3xl font-black uppercase tracking-tighter text-[var(--color-text-main)]">My Plans</h2>
-            </div>
+            <PageHeader
+                tag="FILES"
+                title="My Plans"
+                sub={`${plans.length} ${plans.length === 1 ? 'PLAN' : 'PLANS'}`}
+                right={
+                    <>
+                        <Button variant="link" className="!text-primary-text" onClick={() => setShowImportModal(true)}>+ IMPORT</Button>
+                        <Button variant="link" className="!text-primary-text" onClick={() => setEditingPlan('NEW')}>+ CREATE</Button>
+                    </>
+                }
+            />
 
-            <div className="grid gap-4 pb-28 px-4">
+            <div className="grid gap-3 px-4 pb-28 pt-4">
                 {plans.map(plan => {
                     const isDefault = defaultPlanId == plan.id;
                     return (
-                        <Card key={plan.id} className={`relative group cursor-pointer border transition-all shadow-lg active:scale-[0.99] rounded-none ${isDefault ? 'border-[var(--color-primary)] bg-[var(--color-surface)] glow-border' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/30'}`}>
-                            {/* Title Area - Clickable */}
-                            <div onClick={() => onSelectPlan(plan)} className="p-3 pb-2">
-                                <h3 className={`font-black text-xl uppercase transition-colors tracking-tight break-words leading-tight ${isDefault ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)] group-hover:text-[var(--color-primary)]'}`}>
+                        <Card key={plan.id} active={isDefault} flush>
+                            <div onClick={() => onSelectPlan(plan)} className="cursor-pointer px-4 pb-3 pt-4">
+                                <h3 className="break-words text-xl font-black uppercase leading-tight tracking-[0.02em] text-text-main">
                                     {plan.title}
                                 </h3>
-                                <div className="flex flex-wrap gap-2 mt-2 items-center">
-                                    <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 bg-[var(--color-bg)] rounded-none text-[var(--color-text-muted)] border border-[var(--color-border)]">
-                                        {plan.days?.length || 0} Days
-                                    </span>
-                                    {isDefault && <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 border-2 border-[var(--color-primary)] text-[var(--color-primary)] bg-transparent rounded-none">Default</span>}
+                                <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.15em]">
+                                    <span className="text-text-muted">{plan.days?.length || 0} TRAINING DAYS</span>
+                                    {isDefault && <span className="border border-primary px-1.5 py-0.5 text-primary-text">DEFAULT</span>}
                                 </div>
                             </div>
-                            {/* Action Buttons Row */}
-                            <div className="flex items-center justify-end gap-2 px-3 py-2 border-t border-[var(--color-border)]">
+                            <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-2">
                                 <button
                                     onClick={(e) => toggleDefaultPlan(e, plan.id)}
-                                    className={`w-10 h-10 flex items-center justify-center rounded-none transition-all border-2 flex-shrink-0 ${isDefault ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-transparent' : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] border-[var(--color-border)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]'}`}
-                                    title={isDefault ? "Unset Default" : "Set as Default"}
+                                    className={`${iconBtn} ${isDefault ? 'border-primary bg-primary-soft text-primary-text' : 'border-border bg-bg text-text-muted hover:border-primary hover:text-primary-text'}`}
+                                    title={isDefault ? 'Unset Default' : 'Set as Default'}
+                                    aria-label={isDefault ? 'Unset default plan' : 'Set as default plan'}
                                 >
-                                    ★
+                                    <Star size={16} fill={isDefault ? 'currentColor' : 'none'} />
                                 </button>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setEditingPlan(plan); }}
-                                    className="w-10 h-10 flex items-center justify-center rounded-none bg-[var(--color-bg)] text-[var(--color-text-main)] hover:bg-[var(--color-primary)] hover:text-black transition-all border border-[var(--color-border)] flex-shrink-0"
+                                    className={`${iconBtn} border-border bg-bg text-text-main hover:border-primary hover:text-primary-text`}
                                     title="Edit Plan"
+                                    aria-label="Edit plan"
                                 >
-                                    ✎
+                                    <Pencil size={16} />
                                 </button>
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); deletePlan(plan.id); }}
-                                    className="w-10 h-10 flex items-center justify-center rounded-none bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-[var(--color-alert)] hover:text-white transition-all border border-[var(--color-border)] flex-shrink-0"
+                                    onClick={(e) => { e.stopPropagation(); deletePlan(plan); }}
+                                    className={`${iconBtn} border-border bg-bg text-text-muted hover:border-alert hover:text-alert`}
                                     title="Delete Plan"
+                                    aria-label="Delete plan"
                                 >
-                                    ✕
+                                    <Trash2 size={16} />
                                 </button>
                             </div>
                         </Card>
@@ -172,72 +183,57 @@ export const PlanManager = ({ onSelectPlan, onBack }) => {
                 })}
 
                 {plans.length === 0 && (
-                    <div className="text-center py-20 border-2 border-dashed border-[var(--color-border)] rounded-none opacity-50 bg-[var(--color-surface)] mx-2 group hover:border-[var(--color-primary)] transition-colors">
-                        <div className="flex justify-center mb-4">
-                            <Package size={48} className="text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors" strokeWidth={1.5} />
+                    <div className="border border-dashed border-border bg-surface px-4 py-14 text-center">
+                        <div className="mb-3 flex justify-center">
+                            <Package size={40} className="text-text-muted" strokeWidth={1.5} />
                         </div>
-                        <p className="font-bold text-lg text-[var(--color-text-main)]">No Plans Found</p>
-                        <p className="text-sm text-[var(--color-text-muted)]">Initialize a new protocol above</p>
+                        <p className="font-mono text-sm font-bold uppercase tracking-[0.15em] text-text-main">NO PLANS FOUND</p>
+                        <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.12em] text-text-muted">TAP + CREATE OR + IMPORT ABOVE</p>
                     </div>
                 )}
             </div>
 
-            {/* Import Modal */}
-            {showImportModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="w-full max-w-sm bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="flex justify-between items-center p-4 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
-                            <h3 className="font-bold text-lg uppercase italic tracking-tight">Import Plan</h3>
-                            <button onClick={() => setShowImportModal(false)} className="text-[var(--color-text-muted)] hover:text-white">✕</button>
+            <Sheet open={showImportModal} onClose={() => setShowImportModal(false)} tag="IMPORT" title="Import Plan">
+                <div className="mb-4 flex gap-1 font-mono">
+                    {[['FILE', 'FILE'], ['PASTE', 'PASTE TEXT']].map(([key, text]) => (
+                        <button
+                            key={key}
+                            onClick={() => setImportTab(key)}
+                            className={`flex-1 cursor-pointer border py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] transition-colors ${importTab === key ? 'border-primary bg-primary-soft text-primary-ink' : 'border-border text-text-muted'}`}
+                        >
+                            {text}
+                        </button>
+                    ))}
+                </div>
+
+                {importTab === 'FILE' ? (
+                    <div className="relative border border-dashed border-border py-10 text-center transition-colors hover:border-primary">
+                        <div className="mb-2 flex justify-center">
+                            <FileUp size={32} className="text-text-muted" strokeWidth={1.5} />
                         </div>
+                        <p className="font-mono text-sm font-bold uppercase tracking-[0.12em] text-text-main">SELECT FILE</p>
+                        <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.12em] text-text-muted">JSON, YAML, EXCEL</p>
+                        <input type="file" onChange={handleFileUpload} accept=".json,.yaml,.yml,.xlsx" className="absolute inset-0 cursor-pointer opacity-0" />
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-4">
+                        <textarea
+                            value={pasteContent}
+                            onChange={(e) => setPasteContent(e.target.value)}
+                            placeholder='Paste JSON here... {"title": "My Plan" ...}'
+                            className="h-48 w-full resize-none border border-border bg-bg p-3 font-mono text-xs text-text-main focus:border-primary focus:outline-none"
+                        />
+                        <Button variant="primary" label="PASTE · JSON" onClick={handlePasteImport} disabled={!pasteContent}>LOAD PLAN</Button>
 
-                        <div className="flex border-b border-[var(--color-border)]">
-                            <button
-                                onClick={() => setImportTab('FILE')}
-                                className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors ${importTab === 'FILE' ? 'bg-[var(--color-primary)] text-black' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg)]'}`}
-                            >
-                                File
-                            </button>
-                            <button
-                                onClick={() => setImportTab('PASTE')}
-                                className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors ${importTab === 'PASTE' ? 'bg-[var(--color-primary)] text-black' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg)]'}`}
-                            >
-                                Paste Text
-                            </button>
-                        </div>
-
-                        <div className="p-6">
-                            {importTab === 'FILE' ? (
-                                <div className="text-center py-8 border-2 border-dashed border-[var(--color-border)] rounded-xl hover:border-[var(--color-primary)] transition-colors relative">
-                                    <div className="text-4xl mb-2">📄</div>
-                                    <p className="text-sm font-bold text-[var(--color-text-main)]">Select File</p>
-                                    <p className="text-xs text-[var(--color-text-muted)] mb-4">JSON, YAML, Excel</p>
-                                    <input type="file" onChange={handleFileUpload} accept=".json,.yaml,.yml,.xlsx" className="absolute inset-0 opacity-0 cursor-pointer" />
-                                </div>
-                            ) : (
-                                <div className="flex flex-col gap-4">
-                                    <div className="relative">
-                                        <textarea
-                                            value={pasteContent}
-                                            onChange={(e) => setPasteContent(e.target.value)}
-                                            placeholder='Paste JSON here... {"title": "My Plan" ...}'
-                                            className="w-full h-48 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-3 text-xs font-mono text-[var(--color-text-main)] resize-none focus:outline-none focus:border-[var(--color-primary)]"
-                                        />
-                                    </div>
-                                    <Button onClick={handlePasteImport} disabled={!pasteContent}>Load Plan</Button>
-
-                                    <div className="pt-4 border-t border-[var(--color-border)]">
-                                        <p className="text-[10px] text-[var(--color-text-muted)] mb-2 text-center">Need help converting a plan?</p>
-                                        <Button size="sm" variant="secondary" className="w-full" onClick={copyPromptToClipboard}>
-                                            📋 Copy AI Prompt
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
+                        <div className="border-t border-border pt-4 text-center">
+                            <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.12em] text-text-muted">NEED HELP CONVERTING A PLAN?</p>
+                            <Button variant="link" className="!text-primary-text" onClick={copyPromptToClipboard}>
+                                <Clipboard size={14} /> COPY AI PROMPT
+                            </Button>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </Sheet>
         </div>
     );
 };

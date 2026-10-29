@@ -83,83 +83,14 @@ body {
 
 /* Custom Components & Utilities */
 @layer components {
-  .btn {
-    @apply inline-flex items-center justify-center font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
-    height: 44px;
-    padding: 0 1.5rem;
-    display: inline-flex;
-    border-radius: 0 !important;
-    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    position: relative;
-    letter-spacing: 0.1em;
-    font-family: var(--font-mono);
-    text-transform: uppercase;
-  }
-
-  /* Tech Decos for Buttons */
-  .btn::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 8px;
-    height: 8px;
-    background: white;
-    opacity: 0.5;
-    clip-path: polygon(100% 0, 0 100%, 100% 100%);
-  }
-
-  /* Primary Button: No Shadow, Flat, Tech Border */
-  .btn-primary {
-    @apply shadow-none hover:shadow-none hover:scale-[1.02] bg-primary/90 text-black border-transparent;
-  }
-
-  .btn-primary:hover {
-    background-color: var(--color-primary);
-  }
-
-  .btn-ghost {
-    @apply bg-transparent text-text-muted hover:text-white hover:bg-white/5;
-  }
-
   .glass {
     background-color: var(--color-surface);
     @apply border border-[var(--color-border)] backdrop-blur-md;
   }
 
-  /* Card: Tech Brackets */
-  .card {
-    @apply glass p-4 rounded-none shadow-none border border-white/10 relative;
-    /* Corner Markers */
-    background-image:
-      linear-gradient(to right, var(--color-primary) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--color-primary) 1px, transparent 1px);
-    background-size: 8px 8px;
-    /* Tiny markers top-left */
-    background-repeat: no-repeat;
-    background-position: 0 0;
-  }
-
-  /* Additional Tech Marker Bottom Right */
-  .card::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 12px;
-    height: 12px;
-    border-right: 2px solid var(--color-primary);
-    border-bottom: 2px solid var(--color-primary);
-  }
-
   .glow-border {
     box-shadow: none;
     border-color: var(--color-primary);
-  }
-
-  .glow-text {
-    text-shadow: none;
   }
 
   /* Hide Scrollbar */
@@ -170,55 +101,6 @@ body {
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
-  }
-
-  /* HERO BUTTON - Octagon Shape */
-  .hero-btn {
-    border-radius: 0 !important;
-    clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%);
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    background: rgba(0, 0, 0, 0.8);
-  }
-
-  /* Tech spinner for Rhodes */
-  .hero-btn::before {
-    content: '';
-    position: absolute;
-    inset: 5px;
-    border: 1px dashed var(--color-primary);
-    opacity: 0.3;
-    clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%);
-    animation: spin-slow 10s linear infinite;
-  }
-
-  .hero-glow {
-    border-radius: 0 !important;
-    clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%);
-  }
-
-  @keyframes spin-slow {
-    from {
-      transform: rotate(0deg);
-    }
-
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* START BUTTON CONTENT */
-  .hero-icon {
-    display: none;
-  }
-
-  .hero-text {
-    font-size: 1.25rem;
-    /* Smaller text */
-    font-weight: 900;
-    letter-spacing: 0.1em;
-    line-height: 1.1;
-    max-width: 90%;
-    text-align: center;
   }
 }
 

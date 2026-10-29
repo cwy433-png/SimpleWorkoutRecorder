@@ -4,16 +4,16 @@ export const Input = ({ label, error, ...props }) => {
     return (
         <div className="flex flex-col gap-2 mb-4">
             {label && (
-                <label className="text-sm font-medium text-[var(--color-text-muted)]">
+                <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">
                     {label}
                 </label>
             )}
             <input
-                className="w-full bg-[var(--color-surface-hover)] border border-[var(--color-border)] rounded-lg p-3 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-bg border border-border p-3 font-mono text-text-main focus:outline-none focus:border-primary transition-colors"
                 {...props}
             />
             {error && (
-                <span className="text-xs text-[var(--color-alert)]">{error}</span>
+                <span className="font-mono text-xs text-alert">{error}</span>
             )}
         </div>
     );
