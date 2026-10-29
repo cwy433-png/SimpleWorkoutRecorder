@@ -282,13 +282,13 @@ function App() {
             : 'border-t border-border bg-bg'
             }`}
           >
-            <NavButton icon={Home} active={view === 'HOME'} onClick={() => setView('HOME')} label="OPS" />
+            <NavButton icon={Home} active={view === 'HOME'} onClick={() => setView('HOME')} label="OPS" onDark={view === 'HOME'} />
             <div className="w-px h-6 bg-[var(--color-border)]"></div>
-            <NavButton icon={ClipboardList} active={view === 'PLANS_LIST'} onClick={() => setView('PLANS_LIST')} label="FILES" />
+            <NavButton icon={ClipboardList} active={view === 'PLANS_LIST'} onClick={() => setView('PLANS_LIST')} label="FILES" onDark={view === 'HOME'} />
             <div className="w-px h-6 bg-[var(--color-border)]"></div>
-            <NavButton icon={Calendar} active={view === 'HISTORY'} onClick={() => setView('HISTORY')} label="LOGS" />
+            <NavButton icon={Calendar} active={view === 'HISTORY'} onClick={() => setView('HISTORY')} label="LOGS" onDark={view === 'HOME'} />
             <div className="w-px h-6 bg-[var(--color-border)]"></div>
-            <NavButton icon={Database} active={view === 'DATA'} onClick={() => setView('DATA')} label="DATA" />
+            <NavButton icon={Database} active={view === 'DATA'} onClick={() => setView('DATA')} label="DATA" onDark={view === 'HOME'} />
           </nav>
         </div>
       )}
@@ -300,10 +300,10 @@ function App() {
 
 
 
-const NavButton = ({ icon: Icon, active, onClick, label }) => (
+const NavButton = ({ icon: Icon, active, onClick, label, onDark }) => (
   <button
     onClick={onClick}
-    className={`flex-1 flex flex-col items-center justify-center gap-1 py-1 transition-all duration-300 group relative ${active ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+    className={`flex-1 flex flex-col items-center justify-center gap-1 py-1 transition-all duration-300 group relative ${active ? (onDark ? 'text-[var(--color-primary)]' : 'text-primary-text') : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
   >
     <div className={`transition-all duration-300 ${active ? 'scale-100' : 'scale-90 opacity-70'}`}>
       <Icon size={20} strokeWidth={active ? 2.5 : 2} />
