@@ -300,7 +300,7 @@ export const HistoryManager = () => {
                                                             <span className="text-text-main font-medium">{log.exerciseName || 'Unknown'}</span>
                                                             {!isEditing && (
                                                                 <span className="text-text-muted font-mono">
-                                                                    {log.sets?.length || 0} Sets
+                                                                    {log.sets?.length || 0} {log.sets?.length === 1 ? 'SET' : 'SETS'}
                                                                 </span>
                                                             )}
                                                         </div>
