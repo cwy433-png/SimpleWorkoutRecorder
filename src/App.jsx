@@ -134,7 +134,20 @@ function App() {
     setView('PLANS_LIST');
   };
 
-  const handleStartWorkout = (dayIndex) => {
+  const handleStartWorkout = async (dayIndex) => {
+    // Starting over replaces the current session, finished-but-unsaved included: confirm first.
+    if (session.state.isActive) {
+      const dayName = session.state.plan?.days?.[session.state.dayIndex]?.name || 'Workout';
+      const ok = await dialog.confirm({
+        tone: 'danger',
+        title: 'DISCARD WORKOUT',
+        confirmLabel: 'DISCARD & START',
+        message: session.state.phase === 'debrief'
+          ? `"${dayName}" is finished but not saved. Starting a new workout discards it.`
+          : `"${dayName}" is still in progress. Starting a new workout discards it.`,
+      });
+      if (!ok) return;
+    }
     session.startSession(selectedPlan, dayIndex);
     setView('WORKOUT_DASHBOARD');
   };
