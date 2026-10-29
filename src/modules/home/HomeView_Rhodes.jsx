@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Terminal, Activity, ChevronRight, Zap, Check } from 'lucide-react';
 
-export const HomeView_Rhodes = ({ onStart, view, quote, onOpenTheme, quotePacks = [], enabledQuotePacks = [], toggleQuotePack }) => {
+export const HomeView_Rhodes = ({ onStart, view, quote, quotePacks = [], enabledQuotePacks = [], toggleQuotePack }) => {
     const [showQuotePackModal, setShowQuotePackModal] = useState(false);
     const longPressTimer = useRef(null);
 
@@ -28,24 +28,14 @@ export const HomeView_Rhodes = ({ onStart, view, quote, onOpenTheme, quotePacks 
             {/* Top Status Bar */}
             <div className="flex justify-between items-start p-4 border-b border-[var(--color-border)] relative z-10 bg-[var(--color-bg)]/80 backdrop-blur-sm">
                 <div className="flex flex-col">
-                    <div className="flex items-center gap-2 text-primary font-mono text-xs tracking-widest opacity-80" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>
+                    <div className="flex items-center gap-2 text-neon font-mono text-xs tracking-widest opacity-80" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>
                         <Terminal size={12} />
                         <span>PRTS::TERMINAL_V3</span>
                     </div>
                     <div className="text-2xl font-black tracking-tighter mt-1 font-mono">
-                        RHODES<span className="text-primary/50" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.15)' }}>_NET</span>
+                        RHODES<span className="text-neon/50" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.15)' }}>_NET</span>
                     </div>
                 </div>
-
-                {/* Style Toggle - Technical Switch */}
-                <button
-                    onClick={onOpenTheme}
-                    className="flex items-center gap-2 border border-primary/30 px-3 py-1 bg-primary/5 hover:bg-primary/20 transition-all clip-path-slant"
-                    style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
-                >
-                    <span className="w-2 h-2 bg-primary animate-pulse"></span>
-                    <span className="text-[10px] font-mono text-primary font-bold">MODE_SELECT</span>
-                </button>
             </div>
 
             {/* Main Content Area - Asymmetric Grid */}
@@ -55,7 +45,7 @@ export const HomeView_Rhodes = ({ onStart, view, quote, onOpenTheme, quotePacks 
                 <div className="p-6 flex-1 flex flex-col justify-center">
                     {/* Quote Area - Hidden Easter Egg Interaction */}
                     <div
-                        className="border-l-2 border-primary/50 pl-4 py-2 relative cursor-pointer select-none active:bg-primary/5 transition-colors"
+                        className="border-l-2 border-neon/50 pl-4 py-2 relative cursor-pointer select-none active:bg-neon/5 transition-colors"
                         onTouchStart={handleQuoteTouchStart}
                         onTouchEnd={handleQuoteTouchEnd}
                         onMouseDown={handleQuoteTouchStart}
@@ -63,13 +53,13 @@ export const HomeView_Rhodes = ({ onStart, view, quote, onOpenTheme, quotePacks 
                         onMouseLeave={handleQuoteTouchEnd}
                         title="" // No tooltip to keep it hidden
                     >
-                        <div className="absolute -left-[5px] -top-[5px] w-2 h-2 border-l border-t border-primary"></div>
-                        <div className="absolute -left-[5px] -bottom-[5px] w-2 h-2 border-l border-b border-primary"></div>
+                        <div className="absolute -left-[5px] -top-[5px] w-2 h-2 border-l border-t border-neon"></div>
+                        <div className="absolute -left-[5px] -bottom-[5px] w-2 h-2 border-l border-b border-neon"></div>
 
                         <p className="font-mono text-sm leading-relaxed text-[var(--color-text-main)] max-w-sm italic">
                             "{quote.text}"
                         </p>
-                        <p className="font-mono text-xs text-primary mt-2 text-right" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>
+                        <p className="font-mono text-xs text-neon mt-2 text-right" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>
                             — {quote.author}
                         </p>
                         {/* Hidden hint removed for easter egg feel */}
@@ -79,11 +69,11 @@ export const HomeView_Rhodes = ({ onStart, view, quote, onOpenTheme, quotePacks 
                     <div className="grid grid-cols-2 gap-4 mt-8 max-w-xs">
                         <div className="bg-[var(--color-surface)] p-2 border border-[var(--color-border)]">
                             <div className="text-[10px] text-[var(--color-text-muted)] uppercase">Sys Status</div>
-                            <div className="text-primary font-mono" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>NORMAL</div>
+                            <div className="text-neon font-mono" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>NORMAL</div>
                         </div>
                         <div className="bg-[var(--color-surface)] p-2 border border-[var(--color-border)]">
                             <div className="text-[10px] text-[var(--color-text-muted)] uppercase">Sync</div>
-                            <div className="text-primary font-mono" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>98.2%</div>
+                            <div className="text-neon font-mono" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>98.2%</div>
                         </div>
                     </div>
                 </div>
@@ -96,15 +86,15 @@ export const HomeView_Rhodes = ({ onStart, view, quote, onOpenTheme, quotePacks 
                         className="w-full h-20 relative group overflow-hidden transition-all active:scale-[0.98]"
                     >
                         {/* Clean Bordered Container */}
-                        <div className="absolute inset-0 border-2 border-primary/70 bg-black/60 backdrop-blur-sm"
+                        <div className="absolute inset-0 border-2 border-neon/70 bg-black/60 backdrop-blur-sm"
                             style={{ clipPath: 'polygon(0 0, 100% 0, 100% 70%, 95% 100%, 0 100%)' }}>
 
                             {/* Subtle Inner Glow Line */}
-                            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
+                            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neon/50 to-transparent"></div>
                         </div>
 
                         {/* Text Content */}
-                        <div className="absolute inset-0 flex items-center justify-between px-6 text-primary group-hover:text-white transition-colors">
+                        <div className="absolute inset-0 flex items-center justify-between px-6 text-neon group-hover:text-white transition-colors">
                             <div className="flex flex-col items-start">
                                 <span className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-70">Operation</span>
                                 <span className="text-2xl font-black tracking-tight font-mono uppercase">Deploy</span>
@@ -113,15 +103,15 @@ export const HomeView_Rhodes = ({ onStart, view, quote, onOpenTheme, quotePacks 
                         </div>
 
                         {/* Hover Fill */}
-                        <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                        <div className="absolute inset-0 bg-neon/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                     </button>
 
                     <div className="flex justify-between items-center mt-2 px-1">
                         <span className="text-[10px] font-mono text-[var(--color-text-muted)]">OPERATOR: ACTIVE</span>
                         <div className="h-1 flex-1 mx-4 bg-[var(--color-surface)] overflow-hidden">
-                            <div className="h-full bg-primary w-2/3"></div>
+                            <div className="h-full bg-neon w-2/3"></div>
                         </div>
-                        <span className="text-[10px] font-mono text-primary">READY</span>
+                        <span className="text-[10px] font-mono text-neon">READY</span>
                     </div>
 
                     {/* Data Persistence Warning - High Visibility */}
@@ -148,7 +138,7 @@ export const HomeView_Rhodes = ({ onStart, view, quote, onOpenTheme, quotePacks 
                     >
                         <h3 className="text-lg font-black uppercase tracking-tight text-[var(--color-text-main)] mb-4 border-b border-[var(--color-border)] pb-2 flex items-center justify-between">
                             <span>ACCESS GRANTED</span>
-                            <span className="text-[10px] bg-primary text-black px-1 font-mono">ADMIN</span>
+                            <span className="text-[10px] bg-neon text-black px-1 font-mono">ADMIN</span>
                         </h3>
                         <div className="flex flex-col gap-2">
                             {quotePacks.map(pack => {

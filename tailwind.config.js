@@ -1,3 +1,5 @@
+import { colors } from "./src/theme/tokens.js";
+
 /** @type {import('tailwindcss').Config} */
 export default {
     content: [
@@ -6,24 +8,7 @@ export default {
     ],
     theme: {
         extend: {
-            colors: {
-                bg: "#0a0a0a",
-                surface: {
-                    DEFAULT: "#1C1C1E",
-                    hover: "#2C2C2E",
-                },
-                primary: {
-                    DEFAULT: "#D0FD3E",
-                    dim: "#a6cc2b",
-                },
-                secondary: "#00E5FF", // Cyan
-                alert: "#FF453A",
-                text: {
-                    main: "#FFFFFF",
-                    muted: "#8E8E93",
-                },
-                border: "#3A3A3C",
-            },
+            colors: { ...colors },
             fontFamily: {
                 sans: ["Inter", "system-ui", "sans-serif"],
                 mono: ["JetBrains Mono", "monospace"],
@@ -40,5 +25,11 @@ export default {
             },
         },
     },
-    plugins: [],
+    plugins: [
+        ({ addBase }) => addBase({
+            ':root': Object.fromEntries(
+                Object.entries(colors).map(([name, value]) => [`--color-${name}`, value])
+            ),
+        }),
+    ],
 }

@@ -29,7 +29,7 @@ function TechCorners({ color }) {
     );
 }
 
-export function FloatingRestTimer({ showFinishBar = false, isBottomNavVisible = false, primaryInk = '#0b0b0d' }) {
+export function FloatingRestTimer({ showFinishBar = false, isBottomNavVisible = false }) {
     const { state, commitRest } = useWorkoutSession();
     const { restState } = state;
 
@@ -42,12 +42,11 @@ export function FloatingRestTimer({ showFinishBar = false, isBottomNavVisible = 
             commitRest={commitRest}
             showFinishBar={showFinishBar}
             isBottomNavVisible={isBottomNavVisible}
-            primaryInk={primaryInk}
         />
     );
 }
 
-function ActiveFloatingRestTimer({ restState, commitRest, showFinishBar, isBottomNavVisible, primaryInk }) {
+function ActiveFloatingRestTimer({ restState, commitRest, showFinishBar, isBottomNavVisible }) {
     const [now, setNow] = useState(() => Date.now());
     const initialElapsed = Math.max(0, Math.floor((now - restState.startTime) / 1000));
     const [phase, setPhase] = useState('resting');
@@ -103,9 +102,9 @@ function ActiveFloatingRestTimer({ restState, commitRest, showFinishBar, isBotto
     const displayTime = isLocked || isIdle ? lockedTime : elapsed;
     const progress = isLocked ? 1 : Math.min(1, elapsed / Math.max(1, restState.target));
     const label = isLocked || isIdle ? 'LOGGED' : ready ? 'READY' : 'REST';
-    const textColor = filled ? primaryInk : 'var(--color-text-main)';
-    const mutedColor = filled ? primaryInk : 'var(--color-text-muted)';
-    const cornerColor = filled ? primaryInk : 'var(--color-primary)';
+    const textColor = filled ? 'var(--color-primary-ink)' : 'var(--color-text-main)';
+    const mutedColor = filled ? 'var(--color-primary-ink)' : 'var(--color-text-muted)';
+    const cornerColor = filled ? 'var(--color-primary-ink)' : 'var(--color-primary)';
     const bottomClass = showFinishBar
         ? isBottomNavVisible ? 'bottom-48' : 'bottom-24'
         : 'bottom-20';

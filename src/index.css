@@ -3,23 +3,7 @@
 @tailwind utilities;
 
 :root {
-  /* Brand Colors - Premium Sporty Dark Mode */
-  --color-bg: #0a0a0a;
-  --color-surface: #1C1C1E;
-  --color-surface-hover: #2C2C2E;
-
-  /* Accents */
-  --color-primary: #D0FD3E;
-  /* Neon/Acid Green */
-  --color-primary-dim: #a6cc2b;
-  --color-secondary: #00E5FF;
-  /* Cyan */
-  --color-alert: #FF453A;
-
-  /* Typography */
-  --color-text-main: #FFFFFF;
-  --color-text-muted: #8E8E93;
-  --color-border: #3A3A3C;
+  /* Colors live in src/theme/tokens.js (written to :root by tailwind.config.js) */
 
   /* Spacing */
   --space-xs: 4px;
@@ -28,54 +12,14 @@
   --space-lg: 24px;
   --space-xl: 32px;
 
-  /* Radii - Defaults (Cyber) */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --radius-xl: 32px;
-  --radius-full: 9999px;
-
-  /* Font Styles - Defaults (Cyber) */
-  --font-slant: italic;
-  --font-tracking-heading: -0.05em;
-  /* tightly packed */
-  --font-tracking-body: normal;
-
   /* Font Families */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
-/* Style Presets */
-/* CYBER HEAVY (Default) */
-:root[data-style='cyber'] {
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 24px;
-  --radius-xl: 32px;
-  --radius-full: 9999px;
-
-  --font-slant: italic;
-  --font-tracking-heading: -0.05em;
-}
-
-/* RHODES (Arknights / Tactical) */
-:root[data-style='rhodes'] {
-  --radius-sm: 0px;
-  --radius-md: 2px;
-  --radius-lg: 4px;
-  --radius-xl: 4px;
-  --radius-full: 0px;
-
-  --font-slant: normal;
-  --font-tracking-heading: 0.1em;
-  /* Wide, technical */
-}
-
 body {
   margin: 0;
   background-color: var(--color-bg);
-  background-image: radial-gradient(circle at top, var(--color-surface) 0%, var(--color-bg) 100%);
   color: var(--color-text-main);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -143,12 +87,7 @@ body {
     @apply inline-flex items-center justify-center font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
     height: 44px;
     padding: 0 1.5rem;
-    border-radius: var(--radius-full);
     display: inline-flex;
-  }
-
-  /* RHODES STYLE OVERRIDES for Buttons */
-  :root[data-style='rhodes'] .btn {
     border-radius: 0 !important;
     clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -158,8 +97,8 @@ body {
     text-transform: uppercase;
   }
 
-  /* Tech Decos for Rhodes Buttons */
-  :root[data-style='rhodes'] .btn::after {
+  /* Tech Decos for Buttons */
+  .btn::after {
     content: '';
     position: absolute;
     bottom: 0;
@@ -171,16 +110,12 @@ body {
     clip-path: polygon(100% 0, 0 100%, 100% 100%);
   }
 
+  /* Primary Button: No Shadow, Flat, Tech Border */
   .btn-primary {
-    @apply bg-primary text-black shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.02];
+    @apply shadow-none hover:shadow-none hover:scale-[1.02] bg-primary/90 text-black border-transparent;
   }
 
-  /* Rhodes Primary Button: No Shadow, Flat, Tech Border */
-  :root[data-style='rhodes'] .btn-primary {
-    @apply shadow-none hover:shadow-none bg-primary/90 text-black border-transparent;
-  }
-
-  :root[data-style='rhodes'] .btn-primary:hover {
+  .btn-primary:hover {
     background-color: var(--color-primary);
   }
 
@@ -189,21 +124,13 @@ body {
   }
 
   .glass {
-    @apply backdrop-blur-xl bg-surface/80 border border-white/10;
-  }
-
-  :root[data-style='rhodes'] .glass {
     background-color: var(--color-surface);
-    @apply border-[var(--color-border)] backdrop-blur-md;
+    @apply border border-[var(--color-border)] backdrop-blur-md;
   }
 
+  /* Card: Tech Brackets */
   .card {
-    @apply glass rounded-2xl p-4 shadow-xl;
-  }
-
-  /* Rhodes Card: Tech Brackets */
-  :root[data-style='rhodes'] .card {
-    @apply rounded-none shadow-none border border-white/10 relative;
+    @apply glass p-4 rounded-none shadow-none border border-white/10 relative;
     /* Corner Markers */
     background-image:
       linear-gradient(to right, var(--color-primary) 1px, transparent 1px),
@@ -215,7 +142,7 @@ body {
   }
 
   /* Additional Tech Marker Bottom Right */
-  :root[data-style='rhodes'] .card::after {
+  .card::after {
     content: '';
     position: absolute;
     bottom: 0;
@@ -227,19 +154,11 @@ body {
   }
 
   .glow-border {
-    box-shadow: 0 0 15px rgba(208, 253, 62, 0.2);
-  }
-
-  :root[data-style='rhodes'] .glow-border {
     box-shadow: none;
     border-color: var(--color-primary);
   }
 
   .glow-text {
-    text-shadow: 0 0 20px rgba(208, 253, 62, 0.5);
-  }
-
-  :root[data-style='rhodes'] .glow-text {
     text-shadow: none;
   }
 
@@ -253,11 +172,8 @@ body {
     scrollbar-width: none;
   }
 
-  /* HERO BUTTON SPECIFICS */
-  /* Default (Cyber) - falls back to rounded-full defined in JSX */
-
-  /* RHODES HERO BUTTON - Octagon Shape */
-  :root[data-style='rhodes'] .hero-btn {
+  /* HERO BUTTON - Octagon Shape */
+  .hero-btn {
     border-radius: 0 !important;
     clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%);
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
@@ -265,7 +181,7 @@ body {
   }
 
   /* Tech spinner for Rhodes */
-  :root[data-style='rhodes'] .hero-btn::before {
+  .hero-btn::before {
     content: '';
     position: absolute;
     inset: 5px;
@@ -275,7 +191,7 @@ body {
     animation: spin-slow 10s linear infinite;
   }
 
-  :root[data-style='rhodes'] .hero-glow {
+  .hero-glow {
     border-radius: 0 !important;
     clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%);
   }
@@ -290,12 +206,12 @@ body {
     }
   }
 
-  /* RHODES START BUTTON CONTENT */
-  :root[data-style='rhodes'] .hero-icon {
+  /* START BUTTON CONTENT */
+  .hero-icon {
     display: none;
   }
 
-  :root[data-style='rhodes'] .hero-text {
+  .hero-text {
     font-size: 1.25rem;
     /* Smaller text */
     font-weight: 900;
@@ -306,13 +222,7 @@ body {
   }
 }
 
-/* Rhodes Global Environment Overrides - OUTSIDE LAYER */
-:root[data-style='rhodes'] body {
-  background-image: none !important;
-  /* Background color handled by theme variable injection esp for Light Mode */
-}
-
-:root[data-style='rhodes'] ::selection {
+::selection {
   background: var(--color-primary);
   color: black;
 }
