@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+
+const fieldInput =
+    'bg-bg border border-border p-3 font-mono text-xl font-bold text-text-main focus:border-primary focus:outline-none transition-colors';
 
 export const OneRepMax = () => {
     const [weight, setWeight] = useState('');
@@ -22,58 +25,52 @@ export const OneRepMax = () => {
     };
 
     return (
-        <Card className="glass border border-white/5 p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h3 className="text-xl font-black italic uppercase text-white mb-4 flex items-center gap-2">
-                <span className="text-[var(--color-primary)]">1RM</span> Calculator
+        <Card>
+            <h3 className="text-xl font-black uppercase text-text-main mb-4 flex items-center gap-2">
+                <span className="text-primary-text">1RM</span> Calculator
             </h3>
 
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="flex flex-col">
-                    <label className="text-[10px] font-bold uppercase text-[var(--color-text-muted)] mb-1">Weight (kg)</label>
+                    <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-1">Weight (kg)</label>
                     <input
                         type="number"
                         value={weight}
                         onChange={e => setWeight(e.target.value)}
-                        className="bg-black/50 border border-white/10 rounded-lg p-3 text-xl font-bold text-white focus:border-[var(--color-primary)] outline-none"
+                        className={fieldInput}
                         placeholder="0"
                     />
                 </div>
                 <div className="flex flex-col">
-                    <label className="text-[10px] font-bold uppercase text-[var(--color-text-muted)] mb-1">Reps</label>
+                    <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-1">Reps</label>
                     <input
                         type="number"
                         value={reps}
                         onChange={e => setReps(e.target.value)}
-                        className="bg-black/50 border border-white/10 rounded-lg p-3 text-xl font-bold text-white focus:border-[var(--color-primary)] outline-none"
+                        className={fieldInput}
                         placeholder="0"
                     />
                 </div>
             </div>
 
-            <Button onClick={calculate} className="w-full mb-6 font-black italic shadow-lg shadow-[var(--color-primary)]/20">
-                CALCULATE STRENGTH
+            <Button label="EPLEY FORMULA" onClick={calculate} className="mb-6">
+                CALCULATE
             </Button>
 
             {result !== null && (
-                <div className="bg-[var(--color-surface)] border border-white/5 rounded-xl p-4 text-center animate-in zoom-in-95 duration-300">
-                    <div className="text-[10px] font-bold uppercase text-[var(--color-text-muted)] mb-1">Estimated One Rep Max</div>
-                    <div className="text-5xl font-black italic text-white tracking-tighter drop-shadow-lg">
-                        {result}<span className="text-2xl text-[var(--color-primary)] ml-1">KG</span>
+                <div className="bg-bg border border-border p-4 text-center">
+                    <div className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-1">Estimated One Rep Max</div>
+                    <div className="font-mono text-5xl font-black text-text-main tracking-tighter">
+                        {result}<span className="text-2xl text-primary-text ml-1">KG</span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/5">
-                        <div>
-                            <div className="text-[10px] text-[var(--color-text-muted)]">90%</div>
-                            <div className="font-bold">{Math.round(result * 0.9)}kg</div>
-                        </div>
-                        <div>
-                            <div className="text-[10px] text-[var(--color-text-muted)]">80%</div>
-                            <div className="font-bold">{Math.round(result * 0.8)}kg</div>
-                        </div>
-                        <div>
-                            <div className="text-[10px] text-[var(--color-text-muted)]">70%</div>
-                            <div className="font-bold">{Math.round(result * 0.7)}kg</div>
-                        </div>
+                    <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-border">
+                        {[90, 80, 70].map(pct => (
+                            <div key={pct}>
+                                <div className="font-mono text-[10px] text-text-muted">{pct}%</div>
+                                <div className="font-mono font-bold text-text-main">{Math.round(result * pct / 100)}kg</div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}

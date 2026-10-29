@@ -1,11 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { useDialog } from '../../components/ui/Dialog';
 import { OneRepMax } from './OneRepMax';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { normalizeRecord, sessionTime } from './historyModel';
+import { formatDayLabel, formatClock } from '../../lib/format';
+import { ChevronLeft, ChevronRight, Download, Upload, X } from 'lucide-react';
 
-export const HistoryManager = ({ onBack }) => {
-    const [history, setHistory] = useState([]);
+const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+const dayKey = (ts) => {
+    const d = new Date(ts);
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+};
+
+const tabClass = (active) =>
+    `flex-1 py-2 text-center font-mono text-[11px] font-bold uppercase tracking-[0.18em] transition-colors ${
+        active
+            ? 'border-2 border-primary bg-primary-soft text-primary-ink'
+            : 'border border-border bg-bg text-text-muted hover:text-text-main'
+    }`;
+
+const editInput =
+    'bg-bg border border-border text-center font-mono text-text-main p-1 focus:outline-none focus:border-primary';
+
+export const HistoryManager = () => {
+    const dialog = useDialog();
+    // Load history from localStorage (legacy records are normalized in memory only)
+    const [history, setHistory] = useState(() => {
+        try {
+            const parsed = JSON.parse(localStorage.getItem('workout_history') || '[]');
+            return Array.isArray(parsed) ? parsed.map(normalizeRecord) : [];
+        } catch {
+            return [];
+        }
+    });
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewMode, setViewMode] = useState('CALENDAR'); // CALENDAR | TOOLS
 
@@ -14,38 +45,32 @@ export const HistoryManager = ({ onBack }) => {
     // EDITING STATE
     const [editingWorkout, setEditingWorkout] = useState(null); // The full workout object being edited
 
-    // Load history from localStorage
-    useEffect(() => {
-        const saved = localStorage.getItem('workout_history');
-        if (saved) {
-            setHistory(JSON.parse(saved));
+    // Records grouped by the local day they belong to
+    const byDay = useMemo(() => {
+        const map = new Map();
+        for (const h of history) {
+            const k = dayKey(sessionTime(h));
+            if (!map.has(k)) map.set(k, []);
+            map.get(k).push(h);
         }
-    }, []);
+        return map;
+    }, [history]);
 
-    // Calendar Logic
-    const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
-    const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
-
+    // Calendar Logic (weeks start on Monday)
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const daysInMonth = getDaysInMonth(year, month);
-    const firstDay = getFirstDayOfMonth(year, month);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
 
-    // Get workouts for the currently selected date
-    const selectedDayWorkouts = history.filter(h => {
-        const d = new Date(h.date);
-        return d.getDate() === selectedDate.getDate() &&
-            d.getMonth() === selectedDate.getMonth() &&
-            d.getFullYear() === selectedDate.getFullYear();
-    });
+    const selectedDayWorkouts = byDay.get(dayKey(selectedDate)) || [];
+
+    const monthCount = history.filter(h => {
+        const d = new Date(sessionTime(h));
+        return d.getMonth() === month && d.getFullYear() === year;
+    }).length;
 
     const changeMonth = (delta) => {
         setCurrentDate(new Date(year, month + delta, 1));
-    };
-
-    const isFuture = (day) => {
-        const d = new Date(year, month, day);
-        return d > new Date();
     };
 
     const handleSaveEdit = () => {
@@ -58,285 +83,229 @@ export const HistoryManager = ({ onBack }) => {
     };
 
     const startEditing = (workout) => {
-        // Normalize logs to Array format for consistent editing (V2 Migration)
-        let logs = workout.logs;
-        if (!Array.isArray(logs)) {
-            // Convert Legacy Object to Array structure
-            if (typeof logs === 'object' && logs !== null) {
-                logs = Object.entries(logs).map(([name, sets]) => ({
-                    exerciseName: name,
-                    sets: sets
-                }));
-            } else {
-                logs = [];
-            }
-        }
-        // Deep copy to avoid mutating state directly during edit
-        setEditingWorkout({ ...workout, logs: JSON.parse(JSON.stringify(logs)) });
+        // Deep copy to avoid mutating state directly during edit (logs are already an array)
+        setEditingWorkout({ ...workout, logs: JSON.parse(JSON.stringify(workout.logs)) });
     };
 
+    const exportBackup = () => {
+        const data = {
+            workout_history: JSON.parse(localStorage.getItem('workout_history') || '[]'),
+            workout_plans: JSON.parse(localStorage.getItem('workout_plans') || '[]'),
+            app_theme: JSON.parse(localStorage.getItem('app_theme') || 'null'),
+            app_style: JSON.parse(localStorage.getItem('app_style') || 'null'),
+            export_date: new Date().toISOString()
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `antigravity_backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const importBackup = async (e) => {
+        const input = e.target;
+        const file = input.files?.[0];
+        if (!file) return;
+
+        const ok = await dialog.confirm({
+            title: 'Replace data?',
+            message: 'Importing will REPLACE your current plans and history.',
+            confirmLabel: 'IMPORT',
+            tone: 'danger',
+        });
+        input.value = ''; // Reset input
+        if (!ok) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+
+                // Basic Validation
+                if (data.workout_history) localStorage.setItem('workout_history', JSON.stringify(data.workout_history));
+                if (data.workout_plans) localStorage.setItem('workout_plans', JSON.stringify(data.workout_plans));
+                if (data.app_theme) localStorage.setItem('app_theme', JSON.stringify(data.app_theme));
+                if (data.app_style) localStorage.setItem('app_style', JSON.stringify(data.app_style));
+
+                dialog.notify('Data imported successfully. Reloading...');
+                setTimeout(() => window.location.reload(), 900);
+            } catch (err) {
+                dialog.notify('Failed to parse JSON: ' + err.message, { tone: 'danger' });
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    const today = new Date();
+
     return (
-        <div className="flex flex-col h-full animate-in fade-in duration-300 overflow-y-auto w-full pb-safe">
-            <div className="flex items-center gap-2 mb-2 px-2 pt-2">
-                <Button size="sm" variant="ghost" onClick={onBack}>&larr; Home</Button>
-                <h2 className="text-xl font-black uppercase tracking-tighter ml-auto">Analytics</h2>
-            </div>
+        <div className="flex flex-col h-full overflow-y-auto w-full pb-safe">
+            <PageHeader tag="LOGS" title="History" />
 
             {/* View Switcher Tabs */}
-            <div className="flex gap-2 px-4 mb-6">
-                <button
-                    onClick={() => setViewMode('CALENDAR')}
-                    className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-widest transition-all ${viewMode === 'CALENDAR' ? 'bg-transparent border-2 border-[var(--color-primary)] text-[var(--color-primary)]' : 'bg-transparent border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]'}`}
-                    style={{ clipPath: 'polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px)' }}
-                >
+            <div className="flex gap-1.5 px-4 pt-3 mb-4">
+                <button onClick={() => setViewMode('CALENDAR')} className={tabClass(viewMode === 'CALENDAR')}>
                     History
                 </button>
-                <button
-                    onClick={() => setViewMode('TOOLS')}
-                    className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-widest transition-all ${viewMode === 'TOOLS' ? 'bg-transparent border-2 border-[var(--color-primary)] text-[var(--color-primary)]' : 'bg-transparent border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]'}`}
-                    style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%)' }}
-                >
+                <button onClick={() => setViewMode('TOOLS')} className={tabClass(viewMode === 'TOOLS')}>
                     Tools (1RM)
                 </button>
             </div>
 
             {viewMode === 'TOOLS' ? (
-                <div className="px-4">
+                <div className="px-4 pb-8">
                     <OneRepMax />
-                    {/* ... (Keep existing Tools UI) ... */}
                     <div className="mt-8">
-                        <h4 className="text-xs font-bold uppercase text-[var(--color-text-muted)] mb-4 border-b border-[var(--color-border)] pb-2">Data Management</h4>
+                        <h4 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-4 border-b border-border pb-2">Data Management</h4>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <Button
-                                onClick={() => {
-                                    const data = {
-                                        workout_history: JSON.parse(localStorage.getItem('workout_history') || '[]'),
-                                        workout_plans: JSON.parse(localStorage.getItem('workout_plans') || '[]'),
-                                        app_theme: JSON.parse(localStorage.getItem('app_theme') || 'null'),
-                                        app_style: JSON.parse(localStorage.getItem('app_style') || 'null'),
-                                        export_date: new Date().toISOString()
-                                    };
-
-                                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = `antigravity_backup_${new Date().toISOString().split('T')[0]}.json`;
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    document.body.removeChild(a);
-                                    URL.revokeObjectURL(url);
-                                }}
-                                className="bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]"
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                onClick={exportBackup}
+                                className="flex items-center justify-center gap-2 border border-border bg-surface py-3 font-mono text-[11px] font-bold uppercase tracking-[0.15em] text-text-main transition-colors hover:border-primary"
                             >
-                                📤 Export JSON
-                            </Button>
+                                <Download size={16} /> Export JSON
+                            </button>
 
                             <div className="relative">
                                 <input
                                     type="file"
                                     accept=".json"
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (!file) return;
-
-                                        if (confirm("Importing will REPLACE your current data. Continue?")) {
-                                            const reader = new FileReader();
-                                            reader.onload = (event) => {
-                                                try {
-                                                    const data = JSON.parse(event.target.result);
-
-                                                    // Basic Validation
-                                                    if (data.workout_history) localStorage.setItem('workout_history', JSON.stringify(data.workout_history));
-                                                    if (data.workout_plans) localStorage.setItem('workout_plans', JSON.stringify(data.workout_plans));
-                                                    if (data.app_theme) localStorage.setItem('app_theme', JSON.stringify(data.app_theme));
-                                                    if (data.app_style) localStorage.setItem('app_style', JSON.stringify(data.app_style));
-
-                                                    alert("Data imported successfully! Reloading...");
-                                                    window.location.reload();
-                                                } catch (err) {
-                                                    alert("Failed to parse JSON: " + err.message);
-                                                }
-                                            };
-                                            reader.readAsText(file);
-                                        }
-                                        e.target.value = ''; // Reset input
-                                    }}
+                                    onChange={importBackup}
                                 />
-                                <Button className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-main)] hover:bg-[var(--color-primary)] hover:text-black">
-                                    📥 Import JSON
-                                </Button>
+                                <div className="flex h-full items-center justify-center gap-2 border border-border bg-surface py-3 font-mono text-[11px] font-bold uppercase tracking-[0.15em] text-text-main">
+                                    <Upload size={16} /> Import JSON
+                                </div>
                             </div>
                         </div>
-                        <p className="text-[10px] text-[var(--color-text-muted)] mt-2 italic text-center">
-                            *This will replace your existing plans and history.
+                        <p className="font-mono text-[10px] text-text-muted mt-2 text-center">
+                            This will replace your existing plans and history.
                         </p>
                     </div>
 
                     <div className="mt-8 text-center px-4 opacity-50">
-                        <p className="text-[10px] text-[var(--color-text-muted)]">Volume Tracker • PR Logger • Bodyweight Stats</p>
+                        <p className="font-mono text-[10px] text-text-muted">Volume Tracker • PR Logger • Bodyweight Stats</p>
                     </div>
                 </div>
             ) : (
                 <>
-                    {/* Calendar Header - Centered with Buttons Aside */}
-                    <div className="flex flex-col items-center mb-6">
-                        <div className="flex items-center justify-center gap-4">
-                            <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-[var(--color-surface)] active:scale-95 transition-all text-[var(--color-text-main)]">
-                                <ChevronLeft size={24} />
-                            </button>
-                            <div className="text-center w-32">
-                                <h3 className="text-xl font-black text-[var(--color-text-main)] uppercase leading-none">{['JAN.', 'FEB.', 'MAR.', 'APR.', 'MAY', 'JUN.', 'JUL.', 'AUG.', 'SEP.', 'OCT.', 'NOV.', 'DEC.'][month]}</h3>
-                                <p className="text-[10px] font-bold text-[var(--color-text-muted)] tracking-widest">{year}</p>
-                            </div>
-                            <button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-[var(--color-surface)] active:scale-95 transition-all text-[var(--color-text-main)]">
-                                <ChevronRight size={24} />
-                            </button>
-                        </div>
+                    {/* Month switcher */}
+                    <div className="flex items-center justify-between px-4 pt-2 pb-1">
+                        <button onClick={() => changeMonth(-1)} aria-label="Previous month" className="p-2 text-text-muted hover:text-text-main active:text-primary-text transition-colors">
+                            <ChevronLeft size={20} />
+                        </button>
+                        <b className="font-mono text-base font-black tracking-[0.05em] text-text-main">{MONTHS[month]} {year}</b>
+                        <button onClick={() => changeMonth(1)} aria-label="Next month" className="p-2 text-text-muted hover:text-text-main active:text-primary-text transition-colors">
+                            <ChevronRight size={20} />
+                        </button>
                     </div>
 
-                    {/* Calendar Grid Container */}
-                    <div className="px-2 mb-8">
-                        {/* Days Header */}
-                        <div className="grid grid-cols-7 gap-1 text-center mb-2">
-                            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                                <div key={i} className="text-[10px] font-bold text-[var(--color-text-muted)]">{d}</div>
+                    {/* Calendar grid */}
+                    <div className="px-3 mb-4">
+                        <div className="grid grid-cols-7 text-center mb-1">
+                            {WEEKDAYS.map((d, i) => (
+                                <div key={i} className="py-1 font-mono text-[10px] font-bold tracking-[0.1em] text-text-muted">{d}</div>
                             ))}
                         </div>
 
-                        {/* Days Content */}
-                        <div className="grid grid-cols-7 gap-1 place-items-stretch">
-                            {Array(firstDay).fill(null).map((_, i) => <div key={`empty-${i}`} className="w-full aspect-square" />)}
+                        <div className="grid grid-cols-7 gap-y-0.5">
+                            {Array(firstDay).fill(null).map((_, i) => <div key={`empty-${i}`} className="h-11" />)}
 
                             {Array(daysInMonth).fill(null).map((_, i) => {
                                 const day = i + 1;
-                                const isSelected = selectedDate.getDate() === day && selectedDate.getMonth() === month && selectedDate.getFullYear() === year;
-                                const isToday = new Date().getDate() === day && new Date().getMonth() === month && new Date().getFullYear() === year;
-                                const future = isFuture(day);
-
-                                // Check for workout
-                                const daysWorkouts = history.filter(h => {
-                                    const hDate = new Date(h.date);
-                                    return hDate.getDate() === day && hDate.getMonth() === month && hDate.getFullYear() === year;
-                                });
-                                const hasWorkout = daysWorkouts.length > 0;
+                                const cellDate = new Date(year, month, day);
+                                const isSelected = dayKey(selectedDate) === dayKey(cellDate);
+                                const isToday = dayKey(today) === dayKey(cellDate);
+                                const hasWorkout = byDay.has(dayKey(cellDate));
 
                                 return (
-                                    <div
+                                    <button
                                         key={day}
-                                        onClick={() => setSelectedDate(new Date(year, month, day))}
-                                        className={`
-                                            relative flex flex-col items-center justify-start pt-1 rounded-none cursor-pointer transition-all aspect-square border-2
-                                            ${isSelected
-                                                ? 'bg-transparent border-[var(--color-primary)] z-10'
-                                                : 'border-transparent hover:bg-[var(--color-surface)]'
-                                            }
-                                            ${hasWorkout && !isSelected ? 'bg-[var(--color-surface)] border-[var(--color-border)]' : ''}
-                                        `}
+                                        type="button"
+                                        onClick={() => setSelectedDate(cellDate)}
+                                        className={`relative flex h-11 flex-col items-center justify-center font-mono text-sm font-bold transition-colors ${
+                                            isSelected
+                                                ? 'outline outline-2 -outline-offset-2 outline-primary bg-primary-soft'
+                                                : 'hover:bg-surface'
+                                        } ${isToday ? 'text-primary-text' : 'text-text-main'}`}
                                     >
-                                        {/* Corner Triangle for Selected */}
-                                        {isSelected && (
-                                            <div className="absolute top-0 right-0 w-0 h-0 border-t-[10px] border-t-[var(--color-primary)] border-l-[10px] border-l-transparent"></div>
-                                        )}
-                                        <span className={`text-xs font-bold leading-none ${isSelected ? 'text-[var(--color-primary)]' : isToday ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]'}`}>
-                                            {day}
+                                        {day}
+                                        <span className="mt-0.5 flex h-1 gap-0.5">
+                                            {hasWorkout && <i className="block h-1 w-1 bg-primary" />}
                                         </span>
-
-                                        {/* Status Indicators */}
-                                        <div className="flex-1 flex items-center justify-center w-full">
-                                            {hasWorkout ? (
-                                                isSelected ? (
-                                                    <Check size={14} className="text-[var(--color-primary)] stroke-[3]" />
-                                                ) : (
-                                                    <div className="h-1.5 w-1.5 rounded-full bg-[var(--color-primary)] shadow-[0_0_4px_var(--color-primary)]"></div>
-                                                )
-                                            ) : (
-                                                !future && !isToday && !isSelected && (
-                                                    <span className="text-[8px] font-bold text-[var(--color-text-muted)] opacity-50 uppercase scale-75">Rest</span>
-                                                )
-                                            )}
-                                        </div>
-                                    </div>
+                                        {isToday && (
+                                            <span aria-hidden className="absolute top-1 right-2 h-[3px] w-[3px] bg-primary-text" />
+                                        )}
+                                    </button>
                                 );
                             })}
                         </div>
                     </div>
 
                     {/* SELECTED DAY DETAILS */}
-                    <div className="px-4 pb-20">
-                        <h4 className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-3 border-b border-white/10 pb-2">
-                            {selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+                    <div className="px-4 pt-3 pb-6 border-t border-border">
+                        <h4 className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-text-muted mb-3">
+                            {formatDayLabel(selectedDate.getTime())}
                         </h4>
 
                         {selectedDayWorkouts.length > 0 ? (
                             <div className="flex flex-col gap-3">
-                                {selectedDayWorkouts.map(workout => (
-                                    <Card key={workout.id} className="bg-[var(--color-surface)] border border-[var(--color-border)] p-4 hover:border-[var(--color-primary)]/50 transition-colors">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div>
-                                                <h3 className="font-black italic text-lg text-[var(--color-text-main)]">{workout.planTitle}</h3>
-                                                <p className="text-sm text-[var(--color-primary)] font-bold">{workout.dayName}</p>
+                                {selectedDayWorkouts.map(workout => {
+                                    const isEditing = editingWorkout?.id === workout.id;
+                                    const logs = isEditing ? editingWorkout.logs : workout.logs;
+
+                                    return (
+                                        <Card key={workout.id} active={isEditing}>
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div className="min-w-0">
+                                                    <h3 className="font-black uppercase text-lg leading-tight text-text-main">{workout.planTitle}</h3>
+                                                    <p className="font-mono text-xs font-bold uppercase tracking-[0.1em] text-primary-text">{workout.dayName}</p>
+                                                </div>
+
+                                                <div className="flex gap-3 items-center flex-shrink-0">
+                                                    {!editingWorkout && (
+                                                        <span className="font-mono text-xs text-text-muted">
+                                                            {formatClock(sessionTime(workout))}
+                                                        </span>
+                                                    )}
+
+                                                    {isEditing ? (
+                                                        <>
+                                                            <Button variant="link" tone="danger" size="sm" onClick={() => setEditingWorkout(null)}>Cancel</Button>
+                                                            <Button variant="link" size="sm" className="!text-primary-text" onClick={handleSaveEdit}>Save</Button>
+                                                        </>
+                                                    ) : (
+                                                        <Button variant="link" size="sm" onClick={() => startEditing(workout)}>Edit</Button>
+                                                    )}
+                                                </div>
                                             </div>
 
-                                            <div className="flex gap-2 items-center">
-                                                {!editingWorkout && (
-                                                    <span className="text-xs font-mono text-[var(--color-text-muted)] mr-2">
-                                                        {new Date(workout.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                )}
-
-                                                {editingWorkout?.id === workout.id ? (
-                                                    <div className="flex gap-2">
-                                                        <Button size="sm" variant="ghost" onClick={() => setEditingWorkout(null)} className="text-xs text-[var(--color-alert)] border border-[var(--color-alert)] h-6 px-2">Cancel</Button>
-                                                        <Button size="sm" onClick={handleSaveEdit} className="text-xs bg-[var(--color-primary)] text-black h-6 px-2 font-bold">Save</Button>
-                                                    </div>
-                                                ) : (
-                                                    <Button size="sm" variant="ghost" onClick={() => startEditing(workout)} className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] border border-[var(--color-border)] h-6 px-2 hover:bg-[var(--color-surface)]">
-                                                        Edit
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2 mt-3 pt-3 border-t border-[var(--color-border)]">
-                                            {(() => {
-                                                const isEditing = editingWorkout?.id === workout.id;
-                                                const activeLogs = isEditing ? editingWorkout.logs : workout.logs;
-
-                                                const normalizeLogs = (rawLogs) => {
-                                                    if (Array.isArray(rawLogs)) return rawLogs;
-                                                    if (typeof rawLogs === 'object' && rawLogs !== null) {
-                                                        return Object.entries(rawLogs).map(([name, sets]) => ({
-                                                            exerciseName: name,
-                                                            sets: sets
-                                                        }));
-                                                    }
-                                                    return [];
-                                                };
-
-                                                const logs = normalizeLogs(activeLogs);
-
-                                                return logs.map((log, exIdx) => (
+                                            <div className="space-y-2 mt-3 pt-3 border-t border-border">
+                                                {logs.map((log, exIdx) => (
                                                     <div key={exIdx} className="flex flex-col gap-1 text-xs mb-2">
-                                                        <div className="flex justify-between items-center bg-white/5 p-1 rounded">
-                                                            <span className="text-[var(--color-text-main)]/80 font-medium">{log.exerciseName || 'Unknown'}</span>
+                                                        <div className="flex justify-between items-center bg-bg border border-border px-2 py-1">
+                                                            <span className="text-text-main font-medium">{log.exerciseName || 'Unknown'}</span>
                                                             {!isEditing && (
-                                                                <span className="text-[var(--color-text-muted)] font-mono flex items-center gap-1">
+                                                                <span className="text-text-muted font-mono">
                                                                     {log.sets?.length || 0} Sets
                                                                 </span>
                                                             )}
                                                         </div>
 
-                                                        {isEditing ? (
-                                                            <div className="pl-2 border-l border-[var(--color-border)] ml-1 space-y-2 py-2">
+                                                        {isEditing && (
+                                                            <div className="pl-2 border-l border-border ml-1 space-y-2 py-2">
                                                                 {(log.sets || []).map((s, sIdx) => (
                                                                     <div key={sIdx} className="flex gap-1 items-center font-mono text-[10px]">
-                                                                        <span className="w-4 text-[var(--color-text-muted)] opacity-50">#{sIdx + 1}</span>
+                                                                        <span className="w-4 text-text-muted opacity-60">#{sIdx + 1}</span>
                                                                         <input
                                                                             type="number"
-                                                                            className="w-10 bg-[var(--color-bg)] border border-[var(--color-border)] rounded text-center text-[var(--color-text-main)] p-1"
+                                                                            className={`w-12 ${editInput}`}
                                                                             value={s.weight}
                                                                             onChange={(e) => {
                                                                                 const newLogs = [...editingWorkout.logs];
@@ -344,10 +313,10 @@ export const HistoryManager = ({ onBack }) => {
                                                                                 setEditingWorkout({ ...editingWorkout, logs: newLogs });
                                                                             }}
                                                                         />
-                                                                        <span className="text-[var(--color-text-muted)]">kg ×</span>
+                                                                        <span className="text-text-muted">kg ×</span>
                                                                         <input
                                                                             type="number"
-                                                                            className="w-8 bg-[var(--color-bg)] border border-[var(--color-border)] rounded text-center text-[var(--color-text-main)] p-1"
+                                                                            className={`w-10 ${editInput}`}
                                                                             value={s.reps}
                                                                             onChange={(e) => {
                                                                                 const newLogs = [...editingWorkout.logs];
@@ -355,10 +324,10 @@ export const HistoryManager = ({ onBack }) => {
                                                                                 setEditingWorkout({ ...editingWorkout, logs: newLogs });
                                                                             }}
                                                                         />
-                                                                        <span className="text-[var(--color-text-muted)]">@</span>
+                                                                        <span className="text-text-muted">@</span>
                                                                         <input
                                                                             type="number"
-                                                                            className="w-8 bg-[var(--color-bg)] border border-[var(--color-border)] rounded text-center text-[var(--color-primary)] p-1"
+                                                                            className={`w-10 ${editInput} text-primary-text`}
                                                                             value={s.rpe || ''}
                                                                             placeholder="RPE"
                                                                             onChange={(e) => {
@@ -368,18 +337,22 @@ export const HistoryManager = ({ onBack }) => {
                                                                             }}
                                                                         />
                                                                         <button
+                                                                            type="button"
+                                                                            aria-label="Remove set"
                                                                             onClick={() => {
                                                                                 const newLogs = [...editingWorkout.logs];
                                                                                 newLogs[exIdx].sets.splice(sIdx, 1);
                                                                                 setEditingWorkout({ ...editingWorkout, logs: newLogs });
                                                                             }}
-                                                                            className="ml-auto text-[var(--color-alert)] p-1 hover:bg-white/10 rounded"
-                                                                        >✕</button>
+                                                                            className="ml-auto p-1 text-alert hover:bg-surface-hover"
+                                                                        >
+                                                                            <X size={14} />
+                                                                        </button>
                                                                     </div>
                                                                 ))}
                                                                 <Button
                                                                     size="sm"
-                                                                    variant="ghost"
+                                                                    variant="link"
                                                                     onClick={() => {
                                                                         const newLogs = [...editingWorkout.logs];
                                                                         // Add a copy of the last set or a default set
@@ -387,57 +360,43 @@ export const HistoryManager = ({ onBack }) => {
                                                                         newLogs[exIdx].sets.push({ ...lastSet });
                                                                         setEditingWorkout({ ...editingWorkout, logs: newLogs });
                                                                     }}
-                                                                    className="w-full text-[10px] border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)] mt-2"
+                                                                    className="w-full border border-dashed border-border mt-2"
                                                                 >
                                                                     + Add Set
                                                                 </Button>
                                                             </div>
-                                                        ) : (
-                                                            <div className="hidden pl-2 border-l border-[var(--color-border)] ml-1 space-y-1">
-                                                                {(log.sets || []).map((s, sIdx) => (
-                                                                    <div key={sIdx} className="flex gap-2 font-mono text-[10px] text-[var(--color-text-muted)]">
-                                                                        <span className="w-4 opacity-50">#{sIdx + 1}</span>
-                                                                        <span className="text-[var(--color-text-main)]">{s.weight}kg</span>
-                                                                        <span>×</span>
-                                                                        <span>{s.reps}</span>
-                                                                        {s.rpe && <span className="text-[var(--color-primary)]">@{s.rpe}</span>}
-                                                                    </div>
-                                                                ))}
-                                                            </div>
                                                         )}
                                                     </div>
-                                                ));
-                                            })()}
-                                        </div>
-                                    </Card>
-                                ))}
+                                                ))}
+                                            </div>
+                                        </Card>
+                                    );
+                                })}
                             </div>
                         ) : (
-                            <div className="py-8 text-center border border-dashed border-[var(--color-border)] rounded-xl bg-[var(--color-surface)]">
-                                <p className="text-[var(--color-text-muted)] italic">No workouts recorded this day.</p>
+                            <div className="py-8 text-center border border-dashed border-border bg-surface">
+                                <p className="font-mono text-xs uppercase tracking-[0.15em] text-text-muted">No workouts recorded this day.</p>
                             </div>
                         )}
                     </div>
 
                     {/* Stats Summary - Monthly Perf */}
-                    <Card className="glass border border-[var(--color-border)] mx-2 p-6 flex flex-col gap-4 mb-8 bg-[var(--color-surface)]">
-                        <h4 className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] border-b border-[var(--color-border)] pb-2">Monthly Performance</h4>
-                        <div className="flex justify-around items-center">
-                            <div className="text-center">
-                                <div className="text-4xl font-black italic text-[var(--color-text-main)]">
-                                    {history.filter(h => new Date(h.date).getMonth() === month).length}
+                    <div className="px-4 pb-24">
+                        <Card className="flex flex-col gap-4">
+                            <h4 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted border-b border-border pb-2">Monthly Performance</h4>
+                            <div className="flex justify-around items-center">
+                                <div className="text-center">
+                                    <div className="font-mono text-4xl font-black text-text-main">{monthCount}</div>
+                                    <div className="font-mono text-[10px] uppercase font-bold tracking-[0.15em] text-text-muted mt-1">Workouts</div>
                                 </div>
-                                <div className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] mt-1">Workouts</div>
-                            </div>
-                            <div className="h-8 w-px bg-[var(--color-border)]"></div>
-                            <div className="text-center">
-                                <div className="text-xl font-black italic text-[var(--color-primary)]">
-                                    ACTIVE
+                                <div className="h-8 w-px bg-border"></div>
+                                <div className="text-center">
+                                    <div className="font-mono text-xl font-black uppercase text-primary-text">ACTIVE</div>
+                                    <div className="font-mono text-[10px] uppercase font-bold tracking-[0.15em] text-text-muted mt-1">Status</div>
                                 </div>
-                                <div className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] mt-1">Status</div>
                             </div>
-                        </div>
-                    </Card>
+                        </Card>
+                    </div>
                 </>
             )}
         </div>
