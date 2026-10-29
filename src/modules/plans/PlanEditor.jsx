@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Link2, X } from 'lucide-react';
+import { usePublishHeight, BOTTOM_ABOVE_NAV_AND_BAR } from '../../lib/bottomStack';
 import { createDay, createExercise, createPlan } from './PlanModel';
 
 export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
     const [plan, setPlan] = useState(initialPlan || createPlan("New Plan"));
+    const footerRef = useRef(null);
+    usePublishHeight('--footer-h', footerRef);
 
     const updatePlanTitle = (title) => setPlan({ ...plan, title });
 
@@ -260,8 +263,12 @@ export const PlanEditor = ({ plan: initialPlan, onSave, onCancel, onHome }) => {
                 </div>
             </div>
 
-            {/* Sits above the 80px bottom nav, which is shown on this page. */}
-            <div className="fixed inset-x-0 bottom-20 z-20 border-t border-border bg-bg">
+            {/* Sits above the bottom nav / session bar (heights come from CSS variables). */}
+            <div
+                ref={footerRef}
+                style={{ bottom: BOTTOM_ABOVE_NAV_AND_BAR }}
+                className="fixed inset-x-0 z-20 border-t border-border bg-bg transition-[bottom] duration-300"
+            >
                 <div className="mx-auto flex w-full max-w-md items-center gap-3 px-4 py-3">
                     <Button variant="link" className="flex-shrink-0" onClick={onCancel}>CANCEL</Button>
                     <Button label="PLAN" className="flex-1" onClick={() => onSave(plan)}>SAVE</Button>

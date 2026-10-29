@@ -7,10 +7,11 @@ import { useDialog } from '../../components/ui/Dialog';
 
 import { ExerciseLogger } from './ExerciseLogger';
 import { useWorkoutSession } from './SessionContext';
+import { usePublishHeight, BOTTOM_ABOVE_NAV_AND_BAR } from '../../lib/bottomStack';
 
 const createAlternativeId = () => `alt-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible = false, onBottomReachChange }) => {
+export const SessionDashboard = ({ onFinishWorkout, onBack, onBottomReachChange }) => {
     const dialog = useDialog();
     const {
         state,
@@ -88,6 +89,10 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
         const frame = requestAnimationFrame(handleListScroll);
         return () => cancelAnimationFrame(frame);
     }, [handleListScroll, sessionExercises.length, expandedExerciseId, isAddingExercise]);
+
+    // Publish the FINISH bar height so the rest timer floats above it.
+    const footerRef = useRef(null);
+    usePublishHeight('--footer-h', footerRef, Boolean(activeDay));
 
     // Render Error if data missing (after hooks)
     if (!activeDay) {
@@ -514,8 +519,12 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
                 </div>
             </div>
 
-            {/* Footer Action: sits flush above the bottom nav (nav is 65px tall) when visible */}
-            <div className={`fixed left-0 right-0 z-40 border-t border-border bg-bg px-4 py-3 transition-[bottom] duration-300 ${isBottomNavVisible ? 'bottom-[65px]' : 'bottom-0'}`}>
+            {/* Footer Action: sits flush above the bottom nav / session bar (heights come from CSS variables) */}
+            <div
+                ref={footerRef}
+                style={{ bottom: BOTTOM_ABOVE_NAV_AND_BAR }}
+                className="fixed left-0 right-0 z-40 border-t border-border bg-bg px-4 py-3 transition-[bottom] duration-300"
+            >
                 <Button
                     variant="primary"
                     label={`SESSION · ${String(activeDay.name || '').toUpperCase()}${completedCount === totalExercises ? '' : ' · INCOMPLETE'}`}

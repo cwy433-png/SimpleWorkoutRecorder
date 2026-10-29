@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { QUOTES, QUOTE_PACKS, getEnabledQuotes } from './data/quotes';
-import { Dumbbell, Calendar, ClipboardList, Trophy, Home, BrainCircuit } from 'lucide-react';
+import { Calendar, ClipboardList, Home, BrainCircuit, X } from 'lucide-react';
 import './index.css';
 import { PlanManager } from './modules/plans/PlanManager';
 import { PlanDetail } from './modules/plans/PlanDetail';
@@ -11,6 +11,8 @@ import { HistoryManager } from './modules/history/HistoryManager';
 import { AiManager } from './modules/ai/AiManager';
 import { HomeView_Rhodes } from './modules/home/HomeView_Rhodes';
 import { normalizeRecord } from './modules/history/historyModel';
+import { useDialog } from './components/ui/Dialog';
+import { usePublishHeight } from './lib/bottomStack';
 
 // Motivational Quotes Database
 // Motivational Quotes moved to src/data/quotes.js
@@ -32,6 +34,7 @@ function App() {
   // Global workout session (active workout state survives view switches & reloads).
   // dayIndex is owned by the session context once a workout starts.
   const session = useWorkoutSession();
+  const dialog = useDialog();
 
   // Quote Packs State
   const [enabledQuotePacks, setEnabledQuotePacks] = useState(() => {
@@ -182,11 +185,17 @@ function App() {
     }
   }, [view]);
 
-  const handleDiscardSession = () => {
-    const msg = session.isCrossDay()
+  const handleDiscardSession = async () => {
+    const message = session.isCrossDay()
       ? 'Discard this stale workout from a previous day?'
       : 'Discard the current workout? Progress will be lost.';
-    if (window.confirm(msg)) {
+    const ok = await dialog.confirm({
+      title: 'DISCARD WORKOUT',
+      message,
+      confirmLabel: 'DISCARD',
+      tone: 'danger',
+    });
+    if (ok) {
       session.discardSession();
       if (view === 'WORKOUT_DASHBOARD') setView('HOME');
     }
@@ -212,7 +221,6 @@ function App() {
           <SessionDashboard
             onFinishWorkout={finishWorkout}
             onBack={() => setView(selectedPlan ? 'PLAN_DETAIL' : 'HOME')}
-            isBottomNavVisible={showNav}
             onBottomReachChange={setWorkoutScrolledToBottom}
           />
         );
@@ -229,45 +237,51 @@ function App() {
     && !isKeyboardOpen
     && (view !== 'WORKOUT_DASHBOARD' || workoutScrolledToBottom);
   const sessionIsCrossDay = session.isCrossDay();
+  const showSessionBar = session.state.isActive && view !== 'WORKOUT_DASHBOARD';
+
+  // Publish the live bottom-stack heights (see src/lib/bottomStack.js).
+  const navRef = useRef(null);
+  const sessionBarRef = useRef(null);
+  usePublishHeight('--nav-h', navRef, showNav);
+  usePublishHeight('--session-bar-h', sessionBarRef, showSessionBar);
 
   return (
     <div className="flex flex-col min-h-screen text-text-main font-sans selection:bg-primary selection:text-black transition-colors duration-500">
       {/* Main Content Area */}
-      <main className={`flex-1 flex flex-col relative w-full max-w-md mx-auto ${showNav && view !== 'HOME' ? 'pb-24' : ''}`}>
+      <main
+        className="flex-1 flex flex-col relative w-full max-w-md mx-auto"
+        style={view === 'HOME' ? undefined : { paddingBottom: 'calc(var(--nav-h, 0px) + var(--session-bar-h, 0px))' }}
+      >
         {renderContent()}
       </main>
 
-      <FloatingRestTimer
-        showFinishBar={view === 'WORKOUT_DASHBOARD'}
-        isBottomNavVisible={showNav}
-      />
+      <FloatingRestTimer />
 
-      {/* Resume Workout Pill — visible on any view except the dashboard itself */}
-      {session.state.isActive && view !== 'WORKOUT_DASHBOARD' && (
-        <div className="fixed top-3 left-0 right-0 z-40 flex justify-center pointer-events-none animate-in slide-in-from-top-4 fade-in duration-300 px-4">
-          <div className={`pointer-events-auto flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-full backdrop-blur-md shadow-2xl border ${sessionIsCrossDay
-            ? 'bg-amber-500/15 border-amber-400/50'
-            : 'bg-black/80 border-[var(--color-primary)]/40'
-            }`}>
+      {/* Session bar: slim, directly above the nav; every view except the dashboard */}
+      {showSessionBar && (
+        <div
+          ref={sessionBarRef}
+          style={{ bottom: 'var(--nav-h, 0px)' }}
+          className={`fixed left-0 right-0 z-40 border-t border-border transition-[bottom] duration-300 ${sessionIsCrossDay ? 'bg-amber-50' : 'bg-primary-soft'}`}
+        >
+          <div className="relative mx-auto flex h-10 w-full max-w-md items-stretch">
+            <span aria-hidden className={`absolute bottom-0 left-0 top-0 w-1 ${sessionIsCrossDay ? 'bg-amber-500' : 'bg-primary'}`} />
             <button
+              type="button"
               onClick={handleResumeSession}
-              className="flex items-center gap-2 pr-2"
+              className={`min-w-0 flex-1 truncate pl-4 pr-2 text-left font-mono text-[11px] font-bold uppercase tracking-[0.15em] ${sessionIsCrossDay ? 'text-amber-700' : 'text-primary-text'}`}
             >
-              <span className={`w-2 h-2 rounded-full animate-pulse ${sessionIsCrossDay ? 'bg-amber-400' : 'bg-[var(--color-primary)]'
-                }`} />
-              <span className="text-[10px] font-black uppercase tracking-widest text-white">
-                {sessionIsCrossDay ? 'Stale Workout' : 'Resume Workout'}
-              </span>
-              <span className="text-[10px] font-bold text-white/60 truncate max-w-[100px] uppercase tracking-tight">
-                {session.state.plan?.days?.[session.state.dayIndex]?.name || ''}
-              </span>
+              {sessionIsCrossDay ? 'STALE SESSION' : '>_ SESSION ACTIVE'}
+              {' · '}
+              {session.state.plan?.days?.[session.state.dayIndex]?.name || ''}
             </button>
             <button
+              type="button"
               onClick={handleDiscardSession}
               aria-label="Discard workout"
-              className="text-white/50 hover:text-white text-base w-6 h-6 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center leading-none"
+              className="flex w-11 flex-shrink-0 items-center justify-center text-text-muted hover:text-text-main"
             >
-              ×
+              <X size={16} strokeWidth={2.5} />
             </button>
           </div>
         </div>
@@ -275,10 +289,10 @@ function App() {
 
       {/* Bottom Navigation: opaque, transparent over the cover */}
       {showNav && (
-        <div className="fixed left-0 right-0 z-50 flex justify-center pointer-events-none animate-in slide-in-from-bottom-5 duration-500 bottom-0">
-          <nav className={`pointer-events-auto transition-all duration-500 flex items-center w-full justify-between px-8 py-4 rounded-none ${view === 'HOME'
-            ? 'bg-transparent border-t-0'
-            : 'border-t border-[var(--color-border)] bg-[var(--color-bg)]/95 backdrop-blur-md'
+        <div ref={navRef} className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none animate-in slide-in-from-bottom-5 duration-500">
+          <nav className={`pointer-events-auto flex w-full items-center justify-between rounded-none px-8 py-4 ${view === 'HOME'
+            ? 'bg-transparent'
+            : 'border-t border-border bg-bg'
             }`}
           >
             <NavButton icon={Home} active={view === 'HOME'} onClick={() => setView('HOME')} label="OPS" />

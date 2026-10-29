@@ -79,7 +79,8 @@ export const HomeView_Rhodes = ({ onStart, view, quote, quotePacks = [], enabled
                 </div>
 
                 {/* Bottom Deployment Deck */}
-                <div className="mt-auto p-4 pb-28 bg-gradient-to-t from-black via-black/40 to-transparent z-10 relative">
+                {/* 7rem = the nav clearance (pb-28); grows by the session bar's height while one shows */}
+                <div style={{ paddingBottom: 'calc(7rem + var(--session-bar-h, 0px))' }} className="mt-auto p-4 bg-gradient-to-t from-black via-black/40 to-transparent z-10 relative">
                     {/* Deployment Button - Clean Industrial Style */}
                     <button
                         onClick={onStart}

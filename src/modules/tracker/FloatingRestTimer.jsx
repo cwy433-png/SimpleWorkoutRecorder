@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useWorkoutSession } from './SessionContext';
+import { BOTTOM_ABOVE_FOOTER } from '../../lib/bottomStack';
 
 const LOCKED_MS = 1400;
 const UNMOUNT_DELAY_MS = 700;
@@ -29,7 +30,7 @@ function TechCorners({ color }) {
     );
 }
 
-export function FloatingRestTimer({ showFinishBar = false, isBottomNavVisible = false }) {
+export function FloatingRestTimer() {
     const { state, commitRest } = useWorkoutSession();
     const { restState } = state;
 
@@ -40,13 +41,11 @@ export function FloatingRestTimer({ showFinishBar = false, isBottomNavVisible = 
             key={restState.startTime}
             restState={restState}
             commitRest={commitRest}
-            showFinishBar={showFinishBar}
-            isBottomNavVisible={isBottomNavVisible}
         />
     );
 }
 
-function ActiveFloatingRestTimer({ restState, commitRest, showFinishBar, isBottomNavVisible }) {
+function ActiveFloatingRestTimer({ restState, commitRest }) {
     const [now, setNow] = useState(() => Date.now());
     const initialElapsed = Math.max(0, Math.floor((now - restState.startTime) / 1000));
     const [phase, setPhase] = useState('resting');
@@ -105,9 +104,6 @@ function ActiveFloatingRestTimer({ restState, commitRest, showFinishBar, isBotto
     const textColor = filled ? 'var(--color-primary-ink)' : 'var(--color-text-main)';
     const mutedColor = filled ? 'var(--color-primary-ink)' : 'var(--color-text-muted)';
     const cornerColor = filled ? 'var(--color-primary-ink)' : 'var(--color-primary)';
-    const bottomClass = showFinishBar
-        ? isBottomNavVisible ? 'bottom-40' : 'bottom-24'
-        : 'bottom-20';
 
     const handleCommit = () => {
         if (phase !== 'resting') return;
@@ -121,7 +117,8 @@ function ActiveFloatingRestTimer({ restState, commitRest, showFinishBar, isBotto
         <button
             type="button"
             onClick={handleCommit}
-            className={`fixed right-3 ${bottomClass} z-50 h-[68px] w-[68px] border p-0 font-mono shadow-[0_4px_16px_rgba(0,0,0,0.35)] transition-[opacity,transform,bottom] duration-300 ${filled ? 'border-[var(--color-primary)] bg-[var(--color-primary)]' : 'border-[var(--color-border)] bg-[var(--color-bg)]'} ${dinged ? 'rest-ding' : ready ? 'rest-pulse' : ''} ${isIdle ? 'translate-y-2 scale-[0.92] opacity-0 pointer-events-none' : 'translate-y-0 scale-100 opacity-100'}`}
+            style={{ bottom: `calc(${BOTTOM_ABOVE_FOOTER} + 12px)` }}
+            className={`fixed right-3 z-50 h-[68px] w-[68px] border p-0 font-mono shadow-[0_4px_16px_rgba(0,0,0,0.35)] transition-[opacity,transform,bottom] duration-300 ${filled ? 'border-[var(--color-primary)] bg-[var(--color-primary)]' : 'border-[var(--color-border)] bg-[var(--color-bg)]'} ${dinged ? 'rest-ding' : ready ? 'rest-pulse' : ''} ${isIdle ? 'translate-y-2 scale-[0.92] opacity-0 pointer-events-none' : 'translate-y-0 scale-100 opacity-100'}`}
             aria-label={`Rest timer ${label.toLowerCase()} ${formatTime(displayTime ?? 0)}`}
         >
             {dinged && <span className="rest-halo absolute -inset-0.5 border-2 border-[var(--color-primary)] pointer-events-none" />}
