@@ -518,7 +518,7 @@ export const SessionDashboard = ({ onFinishWorkout, onBack, isBottomNavVisible =
             <div className={`fixed left-0 right-0 z-40 border-t border-border bg-bg px-4 py-3 transition-[bottom] duration-300 ${isBottomNavVisible ? 'bottom-[65px]' : 'bottom-0'}`}>
                 <Button
                     variant="primary"
-                    label={`SESSION · ${String(activeDay.name || '').toUpperCase()}`}
+                    label={`SESSION · ${String(activeDay.name || '').toUpperCase()}${completedCount === totalExercises ? '' : ' · INCOMPLETE'}`}
                     onClick={() => {
                         if (completedCount < totalExercises) {
                             if (window.confirm("You have incomplete exercises. Finish anyway?")) {
