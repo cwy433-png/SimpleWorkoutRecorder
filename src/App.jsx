@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { QUOTES, QUOTE_PACKS, getEnabledQuotes } from './data/quotes';
-import { Calendar, ClipboardList, Home, BrainCircuit, X } from 'lucide-react';
+import { Calendar, ClipboardList, Home, Database, X } from 'lucide-react';
 import './index.css';
 import { PlanManager } from './modules/plans/PlanManager';
 import { PlanDetail } from './modules/plans/PlanDetail';
@@ -9,7 +9,7 @@ import { DebriefView } from './modules/tracker/DebriefView';
 import { FloatingRestTimer } from './modules/tracker/FloatingRestTimer';
 import { useWorkoutSession } from './modules/tracker/SessionContext';
 import { HistoryManager } from './modules/history/HistoryManager';
-import { AiManager } from './modules/ai/AiManager';
+import { DataView } from './modules/data/DataView';
 import { HomeView_Rhodes } from './modules/home/HomeView_Rhodes';
 import { normalizeRecord, weekSummary } from './modules/history/historyModel';
 import { appendRecord, readHistory as readStoredHistory, HistoryCorruptError } from './modules/history/historyStore';
@@ -207,14 +207,14 @@ function App() {
         );
       case 'HISTORY':
         return <HistoryManager onBack={() => setView('HOME')} />;
-      case 'AI_COACH':
-        return <AiManager onBack={() => setView('HOME')} />;
+      case 'DATA':
+        return <DataView />;
       default:
         return <HomeView_Rhodes onStart={handleStartSession} setView={setView} quote={quote} />;
     }
   };
 
-  const showNav = ['HOME', 'PLANS_LIST', 'PLAN_DETAIL', 'WORKOUT_DASHBOARD', 'HISTORY', 'AI_COACH'].includes(view)
+  const showNav = ['HOME', 'PLANS_LIST', 'PLAN_DETAIL', 'WORKOUT_DASHBOARD', 'HISTORY', 'DATA'].includes(view)
     && !isKeyboardOpen
     && (view !== 'WORKOUT_DASHBOARD' || session.state.phase === 'debrief' || workoutScrolledToBottom);
   const sessionIsCrossDay = session.isCrossDay();
@@ -285,7 +285,7 @@ function App() {
             <div className="w-px h-6 bg-[var(--color-border)]"></div>
             <NavButton icon={Calendar} active={view === 'HISTORY'} onClick={() => setView('HISTORY')} label="LOGS" />
             <div className="w-px h-6 bg-[var(--color-border)]"></div>
-            <NavButton icon={BrainCircuit} active={view === 'AI_COACH'} onClick={() => setView('AI_COACH')} label="AI" />
+            <NavButton icon={Database} active={view === 'DATA'} onClick={() => setView('DATA')} label="DATA" />
           </nav>
         </div>
       )}

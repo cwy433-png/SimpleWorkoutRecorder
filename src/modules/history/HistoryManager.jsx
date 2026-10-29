@@ -9,7 +9,7 @@ import { RatingSheet } from './RatingSheet';
 import { durationMinutes, recordLoad, sessionTime } from './historyModel';
 import { HistoryCorruptError, appendRecord, readHistory, replaceRecord } from './historyStore';
 import { formatDayLabel, formatClock } from '../../lib/format';
-import { ChevronLeft, ChevronRight, Download, Plus, Upload, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -114,60 +114,6 @@ export const HistoryManager = () => {
         setEditingWorkout({ ...workout, logs: JSON.parse(JSON.stringify(workout.logs)) });
     };
 
-    const exportBackup = () => {
-        const data = {
-            workout_history: JSON.parse(localStorage.getItem('workout_history') || '[]'),
-            workout_plans: JSON.parse(localStorage.getItem('workout_plans') || '[]'),
-            app_theme: JSON.parse(localStorage.getItem('app_theme') || 'null'),
-            app_style: JSON.parse(localStorage.getItem('app_style') || 'null'),
-            export_date: new Date().toISOString()
-        };
-
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `antigravity_backup_${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    };
-
-    const importBackup = async (e) => {
-        const input = e.target;
-        const file = input.files?.[0];
-        if (!file) return;
-
-        const ok = await dialog.confirm({
-            title: 'Replace data?',
-            message: 'Importing will REPLACE your current plans and history.',
-            confirmLabel: 'IMPORT',
-            tone: 'danger',
-        });
-        input.value = ''; // Reset input
-        if (!ok) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const data = JSON.parse(event.target.result);
-
-                // Basic Validation
-                if (data.workout_history) localStorage.setItem('workout_history', JSON.stringify(data.workout_history));
-                if (data.workout_plans) localStorage.setItem('workout_plans', JSON.stringify(data.workout_plans));
-                if (data.app_theme) localStorage.setItem('app_theme', JSON.stringify(data.app_theme));
-                if (data.app_style) localStorage.setItem('app_style', JSON.stringify(data.app_style));
-
-                dialog.notify('Data imported successfully. Reloading...');
-                setTimeout(() => window.location.reload(), 900);
-            } catch (err) {
-                dialog.notify('Failed to parse JSON: ' + err.message, { tone: 'danger' });
-            }
-        };
-        reader.readAsText(file);
-    };
-
     const today = new Date();
 
     return (
@@ -199,35 +145,6 @@ export const HistoryManager = () => {
             {viewMode === 'TOOLS' ? (
                 <div className="px-4 pb-8">
                     <OneRepMax />
-                    <div className="mt-8">
-                        <h4 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-4 border-b border-border pb-2">Data Management</h4>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <button
-                                type="button"
-                                onClick={exportBackup}
-                                className="flex items-center justify-center gap-2 border border-border bg-surface py-3 font-mono text-[11px] font-bold uppercase tracking-[0.15em] text-text-main transition-colors hover:border-primary"
-                            >
-                                <Download size={16} /> Export JSON
-                            </button>
-
-                            <div className="relative">
-                                <input
-                                    type="file"
-                                    accept=".json"
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                    onChange={importBackup}
-                                />
-                                <div className="flex h-full items-center justify-center gap-2 border border-border bg-surface py-3 font-mono text-[11px] font-bold uppercase tracking-[0.15em] text-text-main">
-                                    <Upload size={16} /> Import JSON
-                                </div>
-                            </div>
-                        </div>
-                        <p className="font-mono text-[10px] text-text-muted mt-2 text-center">
-                            This will replace your existing plans and history.
-                        </p>
-                    </div>
-
                     <div className="mt-8 text-center px-4 opacity-50">
                         <p className="font-mono text-[10px] text-text-muted">Volume Tracker • PR Logger • Bodyweight Stats</p>
                     </div>
