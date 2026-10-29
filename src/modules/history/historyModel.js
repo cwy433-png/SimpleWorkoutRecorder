@@ -185,3 +185,32 @@ export function buildCardioRecord({ activity, endTime, durationMin, sessionRpe, 
     sessionRpe,
   };
 }
+
+/**
+ * Cover summary for the ISO week containing `now` (Mon 00:00 to next Mon 00:00, local time).
+ * `strengthTarget` is the plan's training-day count, or null without a plan.
+ */
+export function weekSummary(history, now, plan) {
+  const start = startOfIsoWeek(now);
+  const s = new Date(start);
+  // Built from calendar days (not +7 x DAY_MS) so DST weeks stay exact.
+  const next = new Date(s.getFullYear(), s.getMonth(), s.getDate() + 7).getTime();
+  const prev = new Date(s.getFullYear(), s.getMonth(), s.getDate() - 7).getTime();
+
+  const out = { weekNumber: isoWeekNumber(now), sessions: 0, strength: 0, cardio: 0, load: 0, lastWeekLoad: 0, strengthTarget: null };
+  for (const raw of history) {
+    const ts = sessionTime(raw);
+    if (!Number.isFinite(ts)) continue;
+    const load = recordLoad(raw) ?? 0;
+    if (ts >= start && ts < next) {
+      out.sessions += 1;
+      if ((raw.type ?? 'strength') === 'cardio') out.cardio += 1;
+      else out.strength += 1;
+      out.load += load;
+    } else if (ts >= prev && ts < start) {
+      out.lastWeekLoad += load;
+    }
+  }
+  if (plan) out.strengthTarget = (plan.days ?? []).filter(isTrainingDay).length;
+  return out;
+}

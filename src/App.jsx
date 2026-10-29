@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { QUOTES, QUOTE_PACKS, getEnabledQuotes } from './data/quotes';
 import { Calendar, ClipboardList, Home, BrainCircuit, X } from 'lucide-react';
 import './index.css';
@@ -11,8 +11,8 @@ import { useWorkoutSession } from './modules/tracker/SessionContext';
 import { HistoryManager } from './modules/history/HistoryManager';
 import { AiManager } from './modules/ai/AiManager';
 import { HomeView_Rhodes } from './modules/home/HomeView_Rhodes';
-import { normalizeRecord } from './modules/history/historyModel';
-import { appendRecord, HistoryCorruptError } from './modules/history/historyStore';
+import { normalizeRecord, weekSummary } from './modules/history/historyModel';
+import { appendRecord, readHistory as readStoredHistory, HistoryCorruptError } from './modules/history/historyStore';
 import { useDialog } from './components/ui/Dialog';
 import { usePublishHeight } from './lib/bottomStack';
 
@@ -47,6 +47,23 @@ function App() {
 
   // Random Quote Logic
   const [quote, setQuote] = useState({ text: "Loading...", author: "System" });
+
+  // Cover week summary: recomputed each time the cover is shown (e.g. after saving a debrief).
+  const homeSummary = useMemo(() => {
+    if (view !== 'HOME') return null;
+    const now = Date.now();
+    let plan = null;
+    try {
+      const savedDefaultId = localStorage.getItem('default_plan_id');
+      if (savedDefaultId) {
+        const plans = JSON.parse(localStorage.getItem('workout_plans') || '[]');
+        plan = plans.find(p => p.id == savedDefaultId) ?? null;
+      }
+    } catch {
+      plan = null;
+    }
+    return { now, summary: weekSummary(readStoredHistory(localStorage), now, plan) };
+  }, [view]);
 
   // Mobile Keyboard Detection
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
@@ -165,6 +182,9 @@ function App() {
       case 'HOME':
         return <HomeView_Rhodes
           onStart={handleStartSession}
+          onOpenLogs={() => setView('HISTORY')}
+          summary={homeSummary?.summary}
+          now={homeSummary?.now}
           setView={setView}
           quote={quote}
           quotePacks={QUOTE_PACKS}

@@ -1,7 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { Terminal, Activity, ChevronRight, Zap, Check } from 'lucide-react';
+import { formatMonthDay } from '../../lib/format';
 
-export const HomeView_Rhodes = ({ onStart, view, quote, quotePacks = [], enabledQuotePacks = [], toggleQuotePack }) => {
+const EMPTY_SUMMARY = { weekNumber: 0, sessions: 0, strength: 0, cardio: 0, load: 0, lastWeekLoad: 0, strengthTarget: null };
+
+export const HomeView_Rhodes = ({ onStart, onOpenLogs, summary, now, view, quote, quotePacks = [], enabledQuotePacks = [], toggleQuotePack }) => {
     const [showQuotePackModal, setShowQuotePackModal] = useState(false);
     const longPressTimer = useRef(null);
 
@@ -17,6 +20,9 @@ export const HomeView_Rhodes = ({ onStart, view, quote, quotePacks = [], enabled
         }
     };
 
+    const { sessions, strength, cardio, load, lastWeekLoad, strengthTarget } = summary ?? EMPTY_SUMMARY;
+    const barPct = strengthTarget > 0 ? Math.min(100, (strength / strengthTarget) * 100) : 0;
+
     return (
         <div className="flex-1 flex flex-col p-0 h-full bg-[var(--color-bg)] text-[var(--color-text-main)] overflow-hidden relative">
             {/* Background Grid - faint overlay */}
@@ -30,7 +36,7 @@ export const HomeView_Rhodes = ({ onStart, view, quote, quotePacks = [], enabled
                 <div className="flex flex-col">
                     <div className="flex items-center gap-2 text-neon font-mono text-xs tracking-widest opacity-80" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>
                         <Terminal size={12} />
-                        <span>PRTS::TERMINAL_V3</span>
+                        <span>{summary ? `WEEK ${summary.weekNumber} · ${formatMonthDay(now)}` : 'WEEK'}</span>
                     </div>
                     <div className="text-2xl font-black tracking-tighter mt-1 font-mono">
                         RHODES<span className="text-neon/50" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.15)' }}>_NET</span>
@@ -65,16 +71,18 @@ export const HomeView_Rhodes = ({ onStart, view, quote, quotePacks = [], enabled
                         {/* Hidden hint removed for easter egg feel */}
                     </div>
 
-                    {/* Decorative Stats */}
+                    {/* Week Stats - tap to open the logs */}
                     <div className="grid grid-cols-2 gap-4 mt-8 max-w-xs">
-                        <div className="bg-[var(--color-surface)] p-2 border border-[var(--color-border)]">
-                            <div className="text-[10px] text-[var(--color-text-muted)] uppercase">Sys Status</div>
-                            <div className="text-neon font-mono" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>NORMAL</div>
-                        </div>
-                        <div className="bg-[var(--color-surface)] p-2 border border-[var(--color-border)]">
-                            <div className="text-[10px] text-[var(--color-text-muted)] uppercase">Sync</div>
-                            <div className="text-neon font-mono" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>98.2%</div>
-                        </div>
+                        <button type="button" onClick={onOpenLogs} className="bg-[var(--color-surface)] p-2 border border-[var(--color-border)] text-left">
+                            <div className="text-[10px] text-[var(--color-text-muted)] uppercase">This Week</div>
+                            <div className="text-neon font-mono" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>{sessions} SESSIONS</div>
+                            <div className="text-[10px] text-[var(--color-text-muted)] font-mono uppercase">{strength} STRENGTH · {cardio} CARDIO</div>
+                        </button>
+                        <button type="button" onClick={onOpenLogs} className="bg-[var(--color-surface)] p-2 border border-[var(--color-border)] text-left">
+                            <div className="text-[10px] text-[var(--color-text-muted)] uppercase">Week Load</div>
+                            <div className="text-neon font-mono" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.25)' }}>{load.toLocaleString('en-US')}</div>
+                            <div className="text-[10px] text-[var(--color-text-muted)] font-mono uppercase">LAST WEEK {lastWeekLoad.toLocaleString('en-US')}</div>
+                        </button>
                     </div>
                 </div>
 
@@ -107,13 +115,15 @@ export const HomeView_Rhodes = ({ onStart, view, quote, quotePacks = [], enabled
                         <div className="absolute inset-0 bg-neon/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                     </button>
 
-                    <div className="flex justify-between items-center mt-2 px-1">
-                        <span className="text-[10px] font-mono text-[var(--color-text-muted)]">OPERATOR: ACTIVE</span>
-                        <div className="h-1 flex-1 mx-4 bg-[var(--color-surface)] overflow-hidden">
-                            <div className="h-full bg-neon w-2/3"></div>
+                    {strengthTarget !== null && (
+                        <div className="flex justify-between items-center mt-2 px-1">
+                            <span className="text-[10px] font-mono text-[var(--color-text-muted)]">STRENGTH</span>
+                            <div className="h-1 flex-1 mx-4 bg-[var(--color-surface)] overflow-hidden">
+                                <div className="h-full bg-neon" style={{ width: `${barPct}%` }}></div>
+                            </div>
+                            <span className="text-[10px] font-mono text-neon">{strength}/{strengthTarget}</span>
                         </div>
-                        <span className="text-[10px] font-mono text-neon">READY</span>
-                    </div>
+                    )}
 
                     {/* Data Persistence Warning - High Visibility */}
                     <div className="mt-6 mb-2 mx-4 p-2 border border-amber-500/50 bg-amber-500/10 text-center animate-pulse">
@@ -121,7 +131,7 @@ export const HomeView_Rhodes = ({ onStart, view, quote, quotePacks = [], enabled
                             ⚠ DATA LOCAL ONLY
                         </p>
                         <p className="text-[9px] font-mono text-amber-500/80 mt-1">
-                            TO BACKUP: GO TO <span className="text-white border-b border-white/20">LOGS</span> &gt; <span className="text-white border-b border-white/20">TOOLS</span>
+                            TO BACKUP: GO TO <span className="text-white border-b border-white/20">DATA</span>
                         </p>
                     </div>
                 </div>

@@ -15,6 +15,7 @@ import {
   withRating,
   buildCardioRecord,
   CARDIO_ACTIVITIES,
+  weekSummary,
 } from './historyModel';
 import { legacyRecord, modernStrength, cardio } from './__fixtures__/legacyHistory';
 
@@ -284,5 +285,56 @@ describe('buildCardioRecord', () => {
   });
   it('lists the five activities', () => {
     expect(CARDIO_ACTIVITIES).toEqual(['run', 'bike', 'swim', 'row', 'other']);
+  });
+});
+
+describe('weekSummary', () => {
+  const at = (iso) => Date.parse(iso);
+  const plan = {
+    id: 'p1',
+    days: [
+      { id: 'a', name: 'Push', exercises: [{ id: 'e1' }] },
+      { id: 'b', name: 'Pull', exercises: [{ id: 'e2' }] },
+      { id: 'r', name: 'Rest', isRestDay: true, exercises: [] },
+      { id: 'c', name: 'Legs', exercises: [{ id: 'e3' }] },
+    ],
+  };
+  const history = [
+    // Monday 08:00, this week: 7 x 58 = 406
+    { id: 1, type: 'strength', startTime: at('2026-10-26T08:00:00+08:00'), date: at('2026-10-26T08:00:00+08:00'), duration: 58, sessionRpe: 7, logs: [] },
+    // Sunday 23:30, same ISO week: 5 x 42 = 210
+    { id: 2, type: 'cardio', startTime: at('2026-11-01T23:30:00+08:00'), date: at('2026-11-01T23:30:00+08:00'), duration: 42, sessionRpe: 5 },
+    // previous Sunday: 6 x 50 = 300
+    { id: 3, type: 'strength', startTime: at('2026-10-25T20:00:00+08:00'), date: at('2026-10-25T20:00:00+08:00'), duration: 50, sessionRpe: 6, logs: [] },
+    // unrated strength this week: counted, no load
+    { id: 4, type: 'strength', startTime: at('2026-10-27T18:00:00+08:00'), date: at('2026-10-27T18:00:00+08:00'), duration: 0, logs: [] },
+  ];
+
+  it('summarises the current and previous week', () => {
+    expect(weekSummary(history, at('2026-10-28T12:00:00+08:00'), plan)).toEqual({
+      weekNumber: 44,
+      sessions: 3,
+      strength: 2,
+      cardio: 1,
+      load: 616,
+      lastWeekLoad: 300,
+      strengthTarget: 3,
+    });
+  });
+  it('has a null target without a plan', () => {
+    expect(weekSummary([], Date.now(), null).strengthTarget).toBeNull();
+  });
+  it('is all zeros for an empty history', () => {
+    expect(weekSummary([], at('2026-10-28T12:00:00+08:00'), plan)).toMatchObject({
+      sessions: 0, strength: 0, cardio: 0, load: 0, lastWeekLoad: 0,
+    });
+  });
+  it('treats legacy records (no type, string date) as strength', () => {
+    const legacy = normalizeRecord({ id: 9, date: '2026-10-27T02:00:00.000Z', duration: 0, logs: {} });
+    expect(weekSummary([legacy], at('2026-10-28T12:00:00+08:00'), null)).toMatchObject({ sessions: 1, strength: 1, cardio: 0 });
+  });
+  it('skips records with an unreadable time', () => {
+    const bad = { id: 8, type: 'strength', date: 'garbage', logs: [] };
+    expect(weekSummary([bad], at('2026-10-28T12:00:00+08:00'), null).sessions).toBe(0);
   });
 });
