@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readHistory, writeHistory, appendRecord, replaceRecord } from './historyStore';
+import { readHistory, writeHistory, appendRecord, replaceRecord, HistoryCorruptError } from './historyStore';
 import { fakeStorage } from '../../test/fakeStorage';
 import { legacyRecord, modernStrength, cardio } from './__fixtures__/legacyHistory';
 
@@ -37,5 +37,27 @@ describe('historyStore', () => {
     expect(out[1].sessionRpe).toBe(5);
     replaceRecord({ id: 999, type: 'cardio' }, mem);
     expect(readHistory(mem)).toHaveLength(2);
+  });
+
+  describe.each(['not json', '{"a":1}'])('with unreadable stored value %j', (bad) => {
+    it('readHistory still returns []', () => {
+      expect(readHistory(fakeStorage({ workout_history: bad }))).toEqual([]);
+    });
+    it('appendRecord throws HistoryCorruptError and leaves storage untouched', () => {
+      const mem = fakeStorage({ workout_history: bad });
+      expect(() => appendRecord(modernStrength, mem)).toThrow(HistoryCorruptError);
+      expect(mem.getItem('workout_history')).toBe(bad);
+    });
+    it('replaceRecord throws HistoryCorruptError and leaves storage untouched', () => {
+      const mem = fakeStorage({ workout_history: bad });
+      expect(() => replaceRecord(modernStrength, mem)).toThrow(HistoryCorruptError);
+      expect(mem.getItem('workout_history')).toBe(bad);
+    });
+  });
+
+  it('a missing or empty key still counts as an empty history for writes', () => {
+    const mem = fakeStorage({ workout_history: '' });
+    appendRecord(cardio, mem);
+    expect(readHistory(mem).map((r) => r.id)).toEqual([cardio.id]);
   });
 });
