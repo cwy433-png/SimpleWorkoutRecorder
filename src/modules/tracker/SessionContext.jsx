@@ -5,8 +5,11 @@ const PERSIST_DEBOUNCE_MS = 300;
 const DEFAULT_REST_SECONDS = 90;
 const inactiveRestState = { isActive: false, startTime: null, target: DEFAULT_REST_SECONDS, exerciseId: null };
 
-const initialState = {
+// eslint-disable-next-line react-refresh/only-export-components -- exported for reducer unit tests
+export const initialState = {
     isActive: false,
+    phase: 'active',
+    endTime: null,
     plan: null,
     dayIndex: null,
     sessionExercises: [],
@@ -30,7 +33,8 @@ function normalizeRestState(restState) {
     };
 }
 
-function reducer(state, action) {
+// eslint-disable-next-line react-refresh/only-export-components -- exported for reducer unit tests
+export function reducer(state, action) {
     switch (action.type) {
         case 'START_SESSION': {
             const { plan, dayIndex } = action;
@@ -38,6 +42,8 @@ function reducer(state, action) {
             const exercises = day?.exercises?.filter(Boolean) || [];
             return {
                 isActive: true,
+                phase: 'active',
+                endTime: null,
                 plan,
                 dayIndex,
                 sessionExercises: exercises,
@@ -55,8 +61,14 @@ function reducer(state, action) {
                 ...initialState,
                 ...action.payload,
                 isActive: true,
+                phase: action.payload.phase === 'debrief' ? 'debrief' : 'active',
+                endTime: action.payload.endTime ?? null,
                 restState: normalizeRestState(action.payload.restState),
             };
+        case 'BEGIN_DEBRIEF':
+            return { ...state, phase: 'debrief', endTime: action.endTime };
+        case 'RESUME_ACTIVE':
+            return { ...state, phase: 'active', endTime: null };
         case 'SET_EXPANDED':
             return {
                 ...state,
@@ -180,6 +192,8 @@ function loadInitialState() {
             ...initialState,
             ...parsed,
             isActive: true,
+            phase: parsed.phase === 'debrief' ? 'debrief' : 'active',
+            endTime: parsed.endTime ?? null,
             restState: normalizeRestState(parsed.restState),
         };
     } catch (e) {
@@ -235,6 +249,8 @@ export function WorkoutSessionProvider({ children }) {
             state,
             isCrossDay,
             startSession: (plan, dayIndex) => dispatch({ type: 'START_SESSION', plan, dayIndex }),
+            beginDebrief: (endTime = Date.now()) => dispatch({ type: 'BEGIN_DEBRIEF', endTime }),
+            resumeActive: () => dispatch({ type: 'RESUME_ACTIVE' }),
             endSession: () => dispatch({ type: 'END_SESSION' }),
             discardSession: () => dispatch({ type: 'DISCARD_SESSION' }),
             setExpanded: (id) => dispatch({ type: 'SET_EXPANDED', id }),

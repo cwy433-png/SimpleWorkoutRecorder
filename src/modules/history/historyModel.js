@@ -92,3 +92,76 @@ export function lastTrainedDayIndex(history, plan) {
   }
   return best;
 }
+
+/** Whole minutes >= 1 from a number or string, otherwise null. Decimals are rounded. */
+export function parseMinutes(input) {
+  if (typeof input !== 'number' && typeof input !== 'string') return null;
+  const text = typeof input === 'string' ? input.trim() : input;
+  if (text === '') return null;
+  const n = Math.round(Number(text));
+  return Number.isFinite(n) && n >= 1 ? n : null;
+}
+
+/** Sets done / planned and total volume (kg) of a live session. */
+export function sessionSummary(session) {
+  const exercises = session.sessionExercises ?? [];
+  const logs = session.sessionLogs ?? {};
+  const setsPlanned = exercises.reduce((sum, ex) => sum + (ex.sets ?? 3), 0);
+  let setsDone = 0;
+  let volumeKg = 0;
+  for (const sets of Object.values(logs)) {
+    if (!Array.isArray(sets)) continue;
+    for (const set of sets) {
+      setsDone += 1;
+      volumeKg += (Number(set.weight) || 0) * (Number(set.reps) || 0);
+    }
+  }
+  return { setsDone, setsPlanned, volumeKg };
+}
+
+/**
+ * Build the history record for a finished live session. The record belongs to the day the
+ * session started (date = startTime), even if it is saved after midnight.
+ */
+export function buildStrengthRecord(session, { durationMin, sessionRpe, now }) {
+  const { plan, dayIndex, sessionExercises, sessionLogs, startTime } = session;
+  const activeDay = plan?.days?.[dayIndex];
+  const logs = [];
+  Object.entries(sessionLogs ?? {}).forEach(([exId, sets]) => {
+    // Look in the session's exercises first (includes ad-hoc ones), then in the plan day.
+    // Loose equality: log keys are strings, exercise ids may be numbers.
+    const exercise =
+      sessionExercises?.find((e) => e.id == exId) ?? activeDay?.exercises?.find((e) => e.id == exId);
+    if (exercise) {
+      logs.push({ exerciseId: exercise.id, exerciseName: exercise.name, sets, timestamp: now });
+    }
+  });
+  return {
+    id: now,
+    type: 'strength',
+    planId: plan?.id,
+    planTitle: plan?.title,
+    dayId: activeDay?.id,
+    dayName: activeDay?.name,
+    date: startTime,
+    startTime,
+    endTime: startTime + durationMin * 60000,
+    duration: durationMin,
+    sessionRpe,
+    logs,
+    meta: { appVersion: '0.2.0', source: 'manual_session' },
+  };
+}
+
+/**
+ * Apply a rating to a record. Records with a startTime keep it and move endTime; legacy
+ * records (no startTime) treat their date as the end and derive the start. `date` is untouched.
+ */
+export function withRating(record, { sessionRpe, durationMin }) {
+  const span = durationMin * 60000;
+  if (record.startTime != null) {
+    return { ...record, sessionRpe, duration: durationMin, endTime: record.startTime + span };
+  }
+  const endTime = sessionTime(record);
+  return { ...record, sessionRpe, duration: durationMin, endTime, startTime: endTime - span };
+}

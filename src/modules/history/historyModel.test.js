@@ -9,6 +9,10 @@ import {
   isoWeekNumber,
   isTrainingDay,
   lastTrainedDayIndex,
+  parseMinutes,
+  sessionSummary,
+  buildStrengthRecord,
+  withRating,
 } from './historyModel';
 import { legacyRecord, modernStrength, cardio } from './__fixtures__/legacyHistory';
 
@@ -140,5 +144,117 @@ describe('lastTrainedDayIndex', () => {
   it('returns null for empty history or no match', () => {
     expect(lastTrainedDayIndex([], plan)).toBeNull();
     expect(lastTrainedDayIndex([modernStrength], { id: 'zz', title: 'Other', days: [] })).toBeNull();
+  });
+});
+
+const plan = {
+  id: 'p1',
+  title: 'Excel Plan',
+  days: [{ id: 'd1', name: 'Push', exercises: [{ id: 'e1', name: 'Bench Press', sets: 4 }] }],
+};
+const sessionExercises = plan.days[0].exercises;
+const sessionLogs = { e1: [{ weight: 60, reps: 8 }] };
+
+describe('parseMinutes', () => {
+  it('rejects empty, zero, negative and non-numeric input', () => {
+    ['', '0', '-5', 'abc', null, undefined, NaN, Infinity, '  ', 0.4, '0.4'].forEach((v) =>
+      expect(parseMinutes(v)).toBeNull(),
+    );
+  });
+  it('rounds decimals and trims strings', () => {
+    expect(parseMinutes('12.7')).toBe(13);
+    expect(parseMinutes(' 45 ')).toBe(45);
+    expect(parseMinutes(58)).toBe(58);
+  });
+});
+
+describe('sessionSummary', () => {
+  it('counts sets, planned sets (default 3) and volume', () => {
+    const session = {
+      sessionExercises: [{ id: 'e1', sets: 4 }, { id: 'e2' }],
+      sessionLogs: { e1: [{ weight: 60, reps: 8 }, { weight: 62.5, reps: 6 }], e2: [{ weight: 20, reps: 10 }] },
+    };
+    expect(sessionSummary(session)).toEqual({ setsDone: 3, setsPlanned: 7, volumeKg: 480 + 375 + 200 });
+  });
+  it('handles an empty session', () => {
+    expect(sessionSummary({ sessionExercises: [], sessionLogs: {} })).toEqual({
+      setsDone: 0,
+      setsPlanned: 0,
+      volumeKg: 0,
+    });
+  });
+});
+
+describe('buildStrengthRecord', () => {
+  // started 23:30, debrief saved later: record belongs to the start
+  const start = Date.parse('2026-10-27T23:30:00+08:00');
+  const session = { plan, dayIndex: 0, sessionExercises, sessionLogs, startTime: start };
+  const now = start + 9e6;
+
+  it('anchors the record at the session start', () => {
+    const rec = buildStrengthRecord(session, { durationMin: 75, sessionRpe: 8, now });
+    expect(rec).toMatchObject({
+      id: now,
+      type: 'strength',
+      planId: 'p1',
+      planTitle: 'Excel Plan',
+      dayId: 'd1',
+      dayName: 'Push',
+      date: start,
+      startTime: start,
+      endTime: start + 75 * 60000,
+      duration: 75,
+      sessionRpe: 8,
+      meta: { appVersion: '0.2.0', source: 'manual_session' },
+    });
+    expect(rec.logs).toEqual([
+      { exerciseId: 'e1', exerciseName: 'Bench Press', sets: [{ weight: 60, reps: 8 }], timestamp: now },
+    ]);
+  });
+
+  it('falls back to the plan day for exercises missing from the session, and drops unknown ids', () => {
+    const rec = buildStrengthRecord(
+      { ...session, sessionExercises: [], sessionLogs: { e1: [{ weight: 1, reps: 1 }], nope: [{ weight: 2, reps: 2 }] } },
+      { durationMin: 30, sessionRpe: null, now },
+    );
+    expect(rec.logs.map((l) => l.exerciseId)).toEqual(['e1']);
+    expect(rec.sessionRpe).toBeNull();
+  });
+
+  it('matches exercise ids loosely (number key vs string id)', () => {
+    const rec = buildStrengthRecord(
+      { ...session, sessionExercises: [{ id: 7, name: 'Row' }], sessionLogs: { 7: [{ weight: 1, reps: 1 }] } },
+      { durationMin: 30, sessionRpe: 6, now },
+    );
+    expect(rec.logs[0]).toMatchObject({ exerciseId: 7, exerciseName: 'Row' });
+  });
+});
+
+describe('withRating', () => {
+  it('legacy record: derives start from its date and leaves date untouched', () => {
+    const out = withRating(legacyRecord, { sessionRpe: 6, durationMin: 50 });
+    const t = Date.parse(legacyRecord.date);
+    expect(out).toMatchObject({
+      endTime: t,
+      startTime: t - 50 * 60000,
+      date: legacyRecord.date,
+      sessionRpe: 6,
+      duration: 50,
+    });
+    expect(legacyRecord.duration).toBe(0);
+  });
+  it('legacy record with a numeric date', () => {
+    const out = withRating({ ...legacyRecord, date: 1000000 }, { sessionRpe: 6, durationMin: 10 });
+    expect(out).toMatchObject({ date: 1000000, endTime: 1000000, startTime: 1000000 - 600000 });
+  });
+  it('record with startTime keeps it and moves endTime', () => {
+    const out = withRating(modernStrength, { sessionRpe: 9, durationMin: 40 });
+    expect(out).toMatchObject({
+      startTime: modernStrength.startTime,
+      endTime: modernStrength.startTime + 40 * 60000,
+      date: modernStrength.date,
+      sessionRpe: 9,
+      duration: 40,
+    });
   });
 });
