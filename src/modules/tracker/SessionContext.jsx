@@ -214,6 +214,16 @@ function isSameLocalDay(tsA, tsB) {
 
 const WorkoutSessionContext = createContext(null);
 
+// Drop the persisted session right away instead of waiting for the debounced effect, so a
+// kill just after SAVE LOG or DISCARD cannot bring the session back on the next launch.
+function clearPersistedSession() {
+    try {
+        localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {
+        console.error('Failed to clear active_session', e);
+    }
+}
+
 export function WorkoutSessionProvider({ children }) {
     const [state, dispatch] = useReducer(reducer, undefined, loadInitialState);
 
@@ -251,8 +261,14 @@ export function WorkoutSessionProvider({ children }) {
             startSession: (plan, dayIndex) => dispatch({ type: 'START_SESSION', plan, dayIndex }),
             beginDebrief: (endTime = Date.now()) => dispatch({ type: 'BEGIN_DEBRIEF', endTime }),
             resumeActive: () => dispatch({ type: 'RESUME_ACTIVE' }),
-            endSession: () => dispatch({ type: 'END_SESSION' }),
-            discardSession: () => dispatch({ type: 'DISCARD_SESSION' }),
+            endSession: () => {
+                clearPersistedSession();
+                dispatch({ type: 'END_SESSION' });
+            },
+            discardSession: () => {
+                clearPersistedSession();
+                dispatch({ type: 'DISCARD_SESSION' });
+            },
             setExpanded: (id) => dispatch({ type: 'SET_EXPANDED', id }),
             saveSet: (exerciseId, setData) => dispatch({ type: 'SAVE_SET', exerciseId, setData }),
             addAdHocExercise: (exercise) => dispatch({ type: 'ADD_AD_HOC_EXERCISE', exercise }),

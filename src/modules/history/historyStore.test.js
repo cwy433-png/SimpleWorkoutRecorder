@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readHistory, writeHistory, appendRecord, replaceRecord, HistoryCorruptError } from './historyStore';
+import { readHistory, writeHistory, appendRecord, replaceRecord, saveStrengthRecord, HistoryCorruptError } from './historyStore';
 import { fakeStorage } from '../../test/fakeStorage';
 import { legacyRecord, modernStrength, cardio } from './__fixtures__/legacyHistory';
 
@@ -59,5 +59,35 @@ describe('historyStore', () => {
     const mem = fakeStorage({ workout_history: '' });
     appendRecord(cardio, mem);
     expect(readHistory(mem).map((r) => r.id)).toEqual([cardio.id]);
+  });
+
+  describe('saveStrengthRecord', () => {
+    it('saving the same session twice leaves exactly one record, keeping the first id', () => {
+      const mem = fakeStorage();
+      const first = { ...modernStrength, id: 1000, dayId: 'd1', startTime: 5000 };
+      const second = { ...first, id: 2000, sessionRpe: 9 };
+      saveStrengthRecord(first, mem);
+      saveStrengthRecord(second, mem);
+      const out = readHistory(mem);
+      expect(out).toHaveLength(1);
+      expect(out[0].id).toBe(1000);
+      expect(out[0].sessionRpe).toBe(9);
+    });
+
+    it('appends when startTime or dayId differ, and never matches cardio', () => {
+      const mem = fakeStorage();
+      saveStrengthRecord({ ...modernStrength, id: 1, dayId: 'd1', startTime: 5000 }, mem);
+      saveStrengthRecord({ ...modernStrength, id: 2, dayId: 'd2', startTime: 5000 }, mem);
+      saveStrengthRecord({ ...modernStrength, id: 3, dayId: 'd1', startTime: 6000 }, mem);
+      appendRecord({ ...cardio, id: 4, startTime: 7000 }, mem);
+      saveStrengthRecord({ ...modernStrength, id: 5, dayId: 'd1', startTime: 7000 }, mem);
+      expect(readHistory(mem).map((r) => r.id)).toEqual([5, 4, 3, 2, 1]);
+    });
+
+    it('refuses to write over unreadable history', () => {
+      const mem = fakeStorage({ workout_history: 'not json' });
+      expect(() => saveStrengthRecord(modernStrength, mem)).toThrow(HistoryCorruptError);
+      expect(mem.getItem('workout_history')).toBe('not json');
+    });
   });
 });

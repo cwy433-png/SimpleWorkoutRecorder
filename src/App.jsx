@@ -12,7 +12,7 @@ import { HistoryManager } from './modules/history/HistoryManager';
 import { DataView } from './modules/data/DataView';
 import { HomeView_Rhodes } from './modules/home/HomeView_Rhodes';
 import { normalizeRecord, weekSummary } from './modules/history/historyModel';
-import { appendRecord, readHistory as readStoredHistory, HistoryCorruptError } from './modules/history/historyStore';
+import { saveStrengthRecord, readHistory as readStoredHistory, HistoryCorruptError } from './modules/history/historyStore';
 import { useDialog } from './components/ui/Dialog';
 import { usePublishHeight } from './lib/bottomStack';
 
@@ -154,7 +154,8 @@ function App() {
 
   const handleSaveDebrief = (record) => {
     try {
-      appendRecord(record, localStorage);
+      // Idempotent: a re-save of the same session replaces its record instead of duplicating it.
+      saveStrengthRecord(record, localStorage);
     } catch (e) {
       if (e instanceof HistoryCorruptError) {
         // Keep the session alive so nothing is lost.

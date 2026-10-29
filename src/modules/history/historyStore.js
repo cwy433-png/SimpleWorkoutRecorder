@@ -53,3 +53,22 @@ export function replaceRecord(record, storage = defaultStorage()) {
   writeHistory(next, storage);
   return next;
 }
+
+/**
+ * Save a finished strength session. Idempotent: if history already holds a strength record for
+ * the same session (same startTime, and same dayId when both have one), that record is replaced
+ * and keeps its id instead of a duplicate being added. Throws HistoryCorruptError like appendRecord.
+ */
+export function saveStrengthRecord(record, storage = defaultStorage()) {
+  const existing = readStrict(storage)
+    .map(normalizeRecord)
+    .find(
+      (r) =>
+        r.type === 'strength' &&
+        r.startTime != null &&
+        r.startTime === record.startTime &&
+        (record.dayId == null || r.dayId == null || r.dayId === record.dayId),
+    );
+  if (!existing) return appendRecord(record, storage);
+  return replaceRecord({ ...record, id: existing.id }, storage);
+}
