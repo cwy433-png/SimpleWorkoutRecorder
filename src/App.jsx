@@ -29,14 +29,17 @@ const readHistory = () => {
 };
 
 function App() {
-  const [view, setView] = useState('HOME');
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [workoutScrolledToBottom, setWorkoutScrolledToBottom] = useState(false);
-
   // Global workout session (active workout state survives view switches & reloads).
   // dayIndex is owned by the session context once a workout starts.
   const session = useWorkoutSession();
   const dialog = useDialog();
+
+  // A reload (or midnight) during the debrief must reopen on the debrief page.
+  const [view, setView] = useState(() => (
+    session.state.isActive && session.state.phase === 'debrief' ? 'WORKOUT_DASHBOARD' : 'HOME'
+  ));
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [workoutScrolledToBottom, setWorkoutScrolledToBottom] = useState(false);
 
   // Quote Packs State
   const [enabledQuotePacks, setEnabledQuotePacks] = useState(() => {
