@@ -139,7 +139,7 @@ export const PlanManager = ({ onSelectPlan, onBack }) => {
                 }
             />
 
-            <div className="grid gap-3 px-4 pb-28 pt-4">
+            <div className="grid grid-cols-1 gap-3 px-4 pb-28 pt-4">
                 {plans.map(plan => {
                     const isDefault = defaultPlanId == plan.id;
                     return (

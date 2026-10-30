@@ -33,7 +33,7 @@ export const PlanDetail = ({ plan, history = [], onBack, onHome, onStartDay }) =
                 sub={`${trainingCount} TRAINING ${trainingCount === 1 ? 'DAY' : 'DAYS'} · TAP A DAY TO START`}
             />
 
-            <div className="grid gap-3 px-4 pb-28 pt-4">
+            <div className="grid grid-cols-1 gap-3 px-4 pb-28 pt-4">
                 {days.map((day, index) => {
                     if (!isTrainingDay(day)) {
                         return (
