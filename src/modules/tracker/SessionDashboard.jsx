@@ -7,7 +7,6 @@ import { useDialog } from '../../components/ui/Dialog';
 
 import { ExerciseLogger } from './ExerciseLogger';
 import { useWorkoutSession } from './SessionContext';
-import { usePublishHeight, BOTTOM_ABOVE_NAV_AND_BAR } from '../../lib/bottomStack';
 
 const createAlternativeId = () => `alt-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
@@ -90,10 +89,6 @@ export const SessionDashboard = ({ onBack, onBottomReachChange }) => {
         const frame = requestAnimationFrame(handleListScroll);
         return () => cancelAnimationFrame(frame);
     }, [handleListScroll, sessionExercises.length, expandedExerciseId, isAddingExercise]);
-
-    // Publish the FINISH bar height so the rest timer floats above it.
-    const footerRef = useRef(null);
-    usePublishHeight('--footer-h', footerRef, Boolean(activeDay));
 
     // Render Error if data missing (after hooks)
     if (!activeDay) {
@@ -357,8 +352,6 @@ export const SessionDashboard = ({ onBack, onBottomReachChange }) => {
     const completedCount = completedWrapper.length;
 
     return (
-        // No animate-in here: its forwards-filled transform would become the containing
-        // block of the fixed footer bar and pin it to this wrapper instead of the viewport.
         <div className="flex flex-col h-full relative">
             <PageHeader
                 tag={`SESSION · ${formatTime(duration)}`}
@@ -368,7 +361,7 @@ export const SessionDashboard = ({ onBack, onBottomReachChange }) => {
             />
 
             {/* Accordion List */}
-            <div ref={listRef} onScroll={handleListScroll} className="flex-1 overflow-auto flex flex-col gap-3 pb-48 px-4 pt-4 no-scrollbar">
+            <div ref={listRef} onScroll={handleListScroll} className="flex-1 overflow-auto flex flex-col gap-3 pb-24 px-4 pt-4 no-scrollbar">
                 {sessionExercises.map((ex, index) => {
                     const logs = sessionLogs[ex.id] || [];
                     const setsDone = logs.length;
@@ -518,23 +511,18 @@ export const SessionDashboard = ({ onBack, onBottomReachChange }) => {
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* Footer Action: sits flush above the bottom nav / session bar (heights come from CSS variables) */}
-            <div
-                ref={footerRef}
-                style={{ bottom: BOTTOM_ABOVE_NAV_AND_BAR }}
-                className="fixed left-0 right-0 z-40 border-t border-border bg-bg px-4 py-3 transition-[bottom] duration-300"
-            >
-                <Button
-                    variant="primary"
-                    label={`SESSION · ${String(activeDay.name || '').toUpperCase()}`}
-                    onClick={() => beginDebrief()}
-                >
-                    {completedCount === totalExercises ? 'FINISH WORKOUT' : 'FINISH NOW'}
-                </Button>
+                {/* Finish sits at the end of the list, reached by scrolling down */}
+                <div className="mt-3">
+                    <Button
+                        variant="primary"
+                        label={`SESSION · ${String(activeDay.name || '').toUpperCase()}`}
+                        onClick={() => beginDebrief()}
+                    >
+                        {completedCount === totalExercises ? 'FINISH WORKOUT' : 'FINISH NOW'}
+                    </Button>
+                </div>
             </div>
-
         </div>
     );
 };

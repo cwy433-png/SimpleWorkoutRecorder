@@ -93,7 +93,7 @@ export const DialogProvider = ({ children }) => {
                                     {confirmState.confirmLabel}
                                 </button>
                             ) : (
-                                <Button variant="compact" className="!w-auto px-5" onClick={() => settle(true)}>
+                                <Button variant="compact" className="!w-auto !pl-7 !pr-6" onClick={() => settle(true)}>
                                     {confirmState.confirmLabel}
                                 </Button>
                             )}
